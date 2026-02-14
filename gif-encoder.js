@@ -1,4 +1,4 @@
-const GIF = require('gif.js');
+const GIF = require('gif.js/dist/gif.js');
 const path = require('path');
 
 const workerPath = path.join(__dirname, 'node_modules', 'gif.js', 'dist', 'gif.worker.js');
