@@ -3,15 +3,41 @@
   "version": "1.0.0",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build": "electron-builder --mac dmg"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "macOS menu bar app for generating Slack emoji images",
   "dependencies": {
-    "electron": "^34.5.8",
     "gif.js": "^0.2.0",
     "menubar": "^9.5.2"
+  },
+  "devDependencies": {
+    "electron": "^34.5.8",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.moji.quick-emoji",
+    "productName": "MOJI",
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.utilities"
+    },
+    "dmg": {
+      "artifactName": "MOJI.dmg",
+      "title": "MOJI"
+    },
+    "files": [
+      "main.js",
+      "index.html",
+      "renderer.js",
+      "animations.js",
+      "gif-encoder.js",
+      "settings.json",
+      "assets/**/*"
+    ]
   }
 }
