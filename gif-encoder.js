@@ -14,14 +14,18 @@ const CONFIGS = [
 function encodeGIF(canvas, animationFn, renderFn, state, config) {
   return new Promise((resolve, reject) => {
     const { frames, quality, delay } = config;
-    const gif = new GIF({
+    const gifOpts = {
       workers: 2,
       quality,
       width: 128,
       height: 128,
       workerScript: WORKER_SCRIPT,
       repeat: 0,
-    });
+    };
+    if (state.bgTransparent) {
+      gifOpts.transparent = 0x00000000;
+    }
+    const gif = new GIF(gifOpts);
 
     const ctx = canvas.getContext('2d');
 

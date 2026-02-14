@@ -4,6 +4,7 @@ const { encodeWithSizeLimit, blobToDataURL, MAX_SIZE } = require('./gif-encoder'
 
 const textInput = document.getElementById('emoji-text');
 const bgColorInput = document.getElementById('bg-color');
+const bgTransparentInput = document.getElementById('bg-transparent');
 const fontColorInput = document.getElementById('font-color');
 const fontSelect = document.getElementById('font-select');
 const canvas = document.getElementById('preview-canvas');
@@ -17,6 +18,7 @@ canvas.height = 128;
 const state = {
   text: '',
   bgColor: '#ffffff',
+  bgTransparent: false,
   fontColor: '#000000',
   fontFamily: '-apple-system, sans-serif',
   selectedAnim: null,
@@ -90,8 +92,12 @@ function renderTextContent() {
   const lines = splitText(state.text);
   if (!lines.length) return;
 
-  ctx.fillStyle = state.bgColor;
-  ctx.fillRect(0, 0, 128, 128);
+  if (state.bgTransparent) {
+    ctx.clearRect(0, 0, 128, 128);
+  } else {
+    ctx.fillStyle = state.bgColor;
+    ctx.fillRect(0, 0, 128, 128);
+  }
 
   const fontSize = calcFontSize(ctx, lines);
   const lineHeight = fontSize * 1.15;
@@ -127,8 +133,12 @@ function renderTextContent() {
 function updatePreview() {
   state.text = textInput.value.trim();
   state.bgColor = bgColorInput.value;
+  state.bgTransparent = bgTransparentInput.checked;
   state.fontColor = fontColorInput.value;
   state.fontFamily = fontSelect.value;
+
+  bgColorInput.disabled = state.bgTransparent;
+  canvas.classList.toggle('transparent-bg', state.bgTransparent);
 
   if (animFrameId) {
     cancelAnimationFrame(animFrameId);
@@ -271,6 +281,7 @@ loadSystemFonts();
 
 textInput.addEventListener('input', updatePreview);
 bgColorInput.addEventListener('input', updatePreview);
+bgTransparentInput.addEventListener('change', updatePreview);
 fontColorInput.addEventListener('input', updatePreview);
 fontSelect.addEventListener('change', updatePreview);
 downloadBtn.addEventListener('click', download);
