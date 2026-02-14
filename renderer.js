@@ -18,15 +18,9 @@ const state = {
   fontFamily: '-apple-system, sans-serif',
 };
 
-// 3글자 단위 자동 줄바꿈
+// 사용자 줄바꿈 기준으로 분할
 function splitText(text) {
-  const chars = [...text]; // multi-byte safe (한글, 이모지 등)
-  if (chars.length <= 3) return [text];
-  const lines = [];
-  for (let i = 0; i < chars.length; i += 3) {
-    lines.push(chars.slice(i, i + 3).join(''));
-  }
-  return lines;
+  return text.split('\n').filter(line => line.length > 0);
 }
 
 // 캔버스에 맞는 최대 폰트 크기 계산
@@ -115,6 +109,19 @@ async function download() {
   }
 }
 
+// 시스템 폰트 로드
+async function loadSystemFonts() {
+  const fonts = await ipcRenderer.invoke('get-system-fonts');
+  for (const family of fonts) {
+    const option = document.createElement('option');
+    option.value = `"${family}"`;
+    option.textContent = family;
+    fontSelect.appendChild(option);
+  }
+}
+
+loadSystemFonts();
+
 // 실시간 반응형 이벤트 바인딩
 textInput.addEventListener('input', updateCanvas);
 bgColorInput.addEventListener('input', updateCanvas);
@@ -123,5 +130,5 @@ fontSelect.addEventListener('change', updateCanvas);
 downloadBtn.addEventListener('click', download);
 
 textInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && canvas.classList.contains('visible')) download();
+  if (e.key === 'Enter' && e.metaKey && canvas.classList.contains('visible')) download();
 });

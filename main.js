@@ -1,5 +1,6 @@
 const { app, ipcMain, nativeImage, Menu } = require('electron');
 const { menubar } = require('menubar');
+const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const zlib = require('zlib');
@@ -122,6 +123,17 @@ mb.on('ready', () => {
   mb.tray.on('right-click', () => {
     mb.tray.popUpContextMenu(contextMenu);
   });
+});
+
+ipcMain.handle('get-system-fonts', async () => {
+  try {
+    const output = execSync(
+      `osascript -l JavaScript -e 'ObjC.import("AppKit"); var mgr = $.NSFontManager.sharedFontManager; var families = mgr.availableFontFamilies; var result = []; for (var i = 0; i < families.count; i++) result.push(families.objectAtIndex(i).js); result.sort().join("\\n")'`
+    ).toString().trim();
+    return output.split('\n').filter(Boolean);
+  } catch {
+    return [];
+  }
 });
 
 ipcMain.handle('save-image', async (_event, { dataURL, fileName }) => {

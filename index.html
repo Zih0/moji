@@ -15,7 +15,7 @@
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
       background: #f5f5f7;
       color: #1d1d1f;
-      padding: 16px;
+      padding: 4px;
       width: 320px;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
@@ -34,8 +34,7 @@
 
     #emoji-text {
       width: 100%;
-      height: 36px;
-      padding: 0 12px;
+      padding: 4px;
       font-size: 13px;
       font-family: inherit;
       border: 1px solid #d2d2d7;
@@ -43,6 +42,7 @@
       background: #fff;
       color: #1d1d1f;
       outline: none;
+      resize: none;
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
       margin-bottom: 10px;
     }
@@ -99,6 +99,7 @@
 
     #font-select {
       flex: 1;
+      min-width: 0;
       height: 28px;
       font-size: 11px;
       font-family: inherit;
@@ -106,7 +107,7 @@
       border-radius: 6px;
       background: #fff;
       color: #1d1d1f;
-      padding: 0 6px;
+      padding: 0 4px;
       outline: none;
     }
 
@@ -171,7 +172,7 @@
 
     #download-btn {
       height: 32px;
-      padding: 0 20px;
+      padding: 0 4px;
       background: #34C759;
       color: #fff;
       display: none;
@@ -206,9 +207,18 @@
 <body>
   <div class="app-title">Quick Emoji</div>
 
-  <input type="text" id="emoji-text" placeholder="텍스트를 입력하세요..." autocomplete="off" spellcheck="false">
+  <textarea id="emoji-text" placeholder="텍스트를 입력하세요..." autocomplete="off" spellcheck="false" rows="2"></textarea>
+
+  <div class="preview-area">
+    <canvas id="preview-canvas" width="128" height="128"></canvas>
+    <div class="placeholder-box">🎨</div>
+    <button id="download-btn">Download</button>
+  </div>
 
   <div class="controls">
+    <select id="font-select">
+      <option value="-apple-system, sans-serif">System Default</option>
+    </select>
     <div class="control-group">
       <span class="control-label">배경</span>
       <input type="color" id="bg-color" value="#ffffff">
@@ -217,18 +227,6 @@
       <span class="control-label">글자</span>
       <input type="color" id="font-color" value="#000000">
     </div>
-    <select id="font-select">
-      <option value="-apple-system, sans-serif">System Default</option>
-      <option value="'Apple SD Gothic Neo', sans-serif">Apple SD Gothic Neo</option>
-      <option value="'Helvetica Neue', sans-serif">Helvetica Neue</option>
-      <option value="Arial, sans-serif">Arial</option>
-    </select>
-  </div>
-
-  <div class="preview-area">
-    <canvas id="preview-canvas" width="128" height="128"></canvas>
-    <div class="placeholder-box">🎨</div>
-    <button id="download-btn">Download</button>
   </div>
 
   <div id="status"></div>
