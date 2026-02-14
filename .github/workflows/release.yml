@@ -20,10 +20,29 @@ jobs:
 
       - run: npm ci
 
-      - name: Build DMG
+      - name: Build app
         run: npm run build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Ad-hoc sign and repackage DMG
+        run: |
+          # Mount the built DMG
+          DMG_PATH=$(ls dist/*.dmg | head -1)
+          hdiutil attach "$DMG_PATH" -mountpoint /tmp/moji-dmg -nobrowse
+
+          # Copy app out and sign ad-hoc
+          cp -R "/tmp/moji-dmg/MOJI.app" /tmp/MOJI.app
+          hdiutil detach /tmp/moji-dmg
+
+          codesign --force --deep --sign - /tmp/MOJI.app
+
+          # Recreate DMG with signed app
+          rm "$DMG_PATH"
+          hdiutil create -volname "MOJI" -srcfolder /tmp/MOJI.app -ov -format UDZO "$DMG_PATH"
+
+          rm -rf /tmp/MOJI.app
 
       - name: Get version
         id: pkg
@@ -37,3 +56,15 @@ jobs:
           files: dist/*.dmg
           generate_release_notes: true
           make_latest: true
+          body: |
+            ## 설치 방법
+
+            1. `MOJI.dmg`를 다운로드합니다.
+            2. DMG를 열고 `MOJI.app`을 `/Applications` 폴더로 드래그합니다.
+            3. **최초 실행 시**, 터미널에서 아래 명령어를 한 번 실행하세요:
+
+            ```
+            xattr -cr /Applications/MOJI.app
+            ```
+
+            4. 이후 정상적으로 실행할 수 있습니다.
