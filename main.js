@@ -14,7 +14,7 @@ const mb = menubar({
   preloadWindow: true,
   browserWindow: {
     width: 320,
-    height: 400,
+    height: 520,
     resizable: false,
     webPreferences: {
       nodeIntegration: true,

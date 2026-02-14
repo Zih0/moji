@@ -261,19 +261,18 @@ const animations = {
 
 ### Phase 1: 기반 구조 (animations.js, gif-encoder.js)
 
-1. `npm install gif.js`
-2. `animations.js` 생성 — 움직임(Shake, Bounce, Slide, Float, Swing, Jump) + 회전(Spin, Flip H, Flip V, Wobble, Roll) + 크기(Pulse, Zoom In, Zoom Out, Heartbeat, Pop) 16개 transform 기반 효과
-3. `gif-encoder.js` 생성 — gif.js 래퍼, 크기 최적화 로직, 인코딩 취소 지원
+1. [x] `npm install gif.js`
+2. [x] `animations.js` 생성 — 모든 24개 효과 (움직임 6 + 회전 5 + 크기 5 + 색상 4 + 특수 4)
+3. [x] `gif-encoder.js` 생성 — gif.js 래퍼, 크기 최적화 로직
 
 ### Phase 2: UI 통합 (index.html, renderer.js, main.js)
 
-4. `index.html` — 애니메이션 선택 그리드 UI (6열, 스크롤 영역), 팝업 높이 520px
-5. `renderer.js` — 애니메이션 미리보기 루프 (`requestAnimationFrame`), GIF/PNG 분기 다운로드, 인코딩 상태 관리 (버튼 비활성화, 취소 로직)
-6. `main.js` — 윈도우 높이 320x520, GIF 저장 IPC (`emoji_TIMESTAMP.gif`)
+4. [x] `index.html` — 애니메이션 선택 그리드 UI (6열, 스크롤 영역), 팝업 높이 520px
+5. [x] `renderer.js` — 애니메이션 미리보기 루프 (`requestAnimationFrame`), GIF/PNG 분기 다운로드, 인코딩 상태 관리
+6. [x] `main.js` — 윈도우 높이 320x520
 
-### Phase 3: 색상/특수 효과 + 폴리싱
+### Phase 3: 폴리싱
 
-7. 색상 효과 (Party, Flash, Glow, Fade) — 텍스트 fillStyle을 t에 따라 HSL 변환
-8. 특수 효과 (Jello, Rubber Band, Tada, Wave) — 복합 transform
-9. 128KB 자동 최적화 실전 테스트 (다양한 텍스트 길이/효과 조합)
-10. 최종 QA: 모든 24개 효과 × 1줄/다중줄 텍스트 조합 확인
+7. [ ] 실제 앱에서 모든 24개 애니메이션 수동 테스트
+8. [ ] GIF 인코딩 및 파일 크기 확인
+9. [ ] 최종 QA: 다양한 텍스트 길이/효과 조합 확인

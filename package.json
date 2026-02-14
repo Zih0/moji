@@ -11,6 +11,7 @@
   "description": "macOS menu bar app for generating Slack emoji images",
   "dependencies": {
     "electron": "^34.5.8",
+    "gif.js": "^0.2.0",
     "menubar": "^9.5.2"
   }
 }
