@@ -1,0 +1,16 @@
+{
+  "name": "quick-emoji",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "macOS menu bar app for generating Slack emoji images",
+  "dependencies": {
+    "electron": "^34.5.8",
+    "menubar": "^9.5.2"
+  }
+}
