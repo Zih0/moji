@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,7 +17,6 @@
       color: #1d1d1f;
       padding: 16px;
       width: 320px;
-      min-height: 380px;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       user-select: none;
@@ -30,17 +29,11 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
       text-align: center;
-      margin-bottom: 16px;
-    }
-
-    .input-row {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
 
     #emoji-text {
-      flex: 1;
+      width: 100%;
       height: 36px;
       padding: 0 12px;
       font-size: 13px;
@@ -51,6 +44,7 @@
       color: #1d1d1f;
       outline: none;
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      margin-bottom: 10px;
     }
 
     #emoji-text:focus {
@@ -62,37 +56,58 @@
       color: #aaabb0;
     }
 
-    button {
-      font-family: inherit;
-      font-size: 13px;
-      font-weight: 500;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: opacity 0.15s ease, transform 0.1s ease;
-      outline: none;
+    .controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 12px;
     }
 
-    button:active {
-      transform: scale(0.97);
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
 
-    button:disabled {
-      opacity: 0.5;
-      cursor: default;
-      transform: none;
-    }
-
-    #generate-btn {
-      height: 36px;
-      padding: 0 16px;
-      background: #007AFF;
-      color: #fff;
+    .control-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: #86868b;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
       white-space: nowrap;
     }
 
-    #generate-btn:hover:not(:disabled) {
-      opacity: 0.88;
+    input[type="color"] {
+      -webkit-appearance: none;
+      width: 28px;
+      height: 28px;
+      border: 1px solid #d2d2d7;
+      border-radius: 6px;
+      cursor: pointer;
+      padding: 2px;
+    }
+
+    input[type="color"]::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+
+    input[type="color"]::-webkit-color-swatch {
+      border: none;
+      border-radius: 4px;
+    }
+
+    #font-select {
+      flex: 1;
+      height: 28px;
+      font-size: 11px;
+      font-family: inherit;
+      border: 1px solid #d2d2d7;
+      border-radius: 6px;
+      background: #fff;
+      color: #1d1d1f;
+      padding: 0 6px;
+      outline: none;
     }
 
     .preview-area {
@@ -108,7 +123,6 @@
       height: 128px;
       border: 1px solid #ddd;
       border-radius: 12px;
-      background: #fff;
       display: none;
       transition: opacity 0.3s ease;
     }
@@ -132,6 +146,27 @@
 
     #preview-canvas.visible ~ .placeholder-box {
       display: none;
+    }
+
+    button {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: opacity 0.15s ease, transform 0.1s ease;
+      outline: none;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+      transform: none;
     }
 
     #download-btn {
@@ -171,9 +206,23 @@
 <body>
   <div class="app-title">Quick Emoji</div>
 
-  <div class="input-row">
-    <input type="text" id="emoji-text" placeholder="Enter text for emoji..." autocomplete="off" spellcheck="false">
-    <button id="generate-btn">Generate</button>
+  <input type="text" id="emoji-text" placeholder="텍스트를 입력하세요..." autocomplete="off" spellcheck="false">
+
+  <div class="controls">
+    <div class="control-group">
+      <span class="control-label">배경</span>
+      <input type="color" id="bg-color" value="#ffffff">
+    </div>
+    <div class="control-group">
+      <span class="control-label">글자</span>
+      <input type="color" id="font-color" value="#000000">
+    </div>
+    <select id="font-select">
+      <option value="-apple-system, sans-serif">System Default</option>
+      <option value="'Apple SD Gothic Neo', sans-serif">Apple SD Gothic Neo</option>
+      <option value="'Helvetica Neue', sans-serif">Helvetica Neue</option>
+      <option value="Arial, sans-serif">Arial</option>
+    </select>
   </div>
 
   <div class="preview-area">

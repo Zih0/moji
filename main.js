@@ -1,4 +1,4 @@
-const { app, ipcMain, nativeImage } = require('electron');
+const { app, ipcMain, nativeImage, Menu } = require('electron');
 const { menubar } = require('menubar');
 const path = require('path');
 const fs = require('fs');
@@ -13,7 +13,7 @@ const mb = menubar({
   preloadWindow: true,
   browserWindow: {
     width: 320,
-    height: 380,
+    height: 400,
     resizable: false,
     webPreferences: {
       nodeIntegration: true,
@@ -115,6 +115,13 @@ mb.on('ready', () => {
     const img = nativeImage.createFromBuffer(pngBuffer, { scaleFactor: 1.0 });
     mb.tray.setImage(img);
   }
+
+  const contextMenu = Menu.buildFromTemplate([
+    { label: 'Exit', click: () => app.quit() },
+  ]);
+  mb.tray.on('right-click', () => {
+    mb.tray.popUpContextMenu(contextMenu);
+  });
 });
 
 ipcMain.handle('save-image', async (_event, { dataURL, fileName }) => {
