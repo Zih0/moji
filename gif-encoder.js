@@ -4,6 +4,10 @@ const path = require('path');
 const workerPath = path.join(__dirname, 'node_modules', 'gif.js', 'dist', 'gif.worker.js');
 const WORKER_SCRIPT = `file://${workerPath}`;
 const MAX_SIZE = 128 * 1024; // 128KB Slack limit
+// Chroma key color for GIF transparency. GIF has no alpha channel, so we fill
+// "transparent" areas with this color and tell the encoder to treat it as transparent.
+// Using bright green (classic green-screen) to avoid colliding with typical text colors.
+const TRANSPARENT_KEY = 0x00FF00;
 
 const CONFIGS = [
   { frames: 15, quality: 10, delay: 66 },
@@ -23,7 +27,7 @@ function encodeGIF(canvas, animationFn, renderFn, state, config) {
       repeat: 0,
     };
     if (state.bgTransparent) {
-      gifOpts.transparent = 0x00000000;
+      gifOpts.transparent = TRANSPARENT_KEY;
     }
     const gif = new GIF(gifOpts);
 
@@ -68,4 +72,4 @@ function blobToDataURL(blob) {
   });
 }
 
-module.exports = { encodeWithSizeLimit, blobToDataURL, MAX_SIZE };
+module.exports = { encodeWithSizeLimit, blobToDataURL, MAX_SIZE, TRANSPARENT_KEY };

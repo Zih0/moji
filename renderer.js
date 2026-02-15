@@ -1,6 +1,6 @@
 const { ipcRenderer } = require('electron');
 const { animations, animationList } = require('./animations');
-const { encodeWithSizeLimit, blobToDataURL, MAX_SIZE } = require('./gif-encoder');
+const { encodeWithSizeLimit, blobToDataURL, MAX_SIZE, TRANSPARENT_KEY } = require('./gif-encoder');
 
 const textInput = document.getElementById('emoji-text');
 const bgColorInput = document.getElementById('bg-color');
@@ -25,6 +25,7 @@ const state = {
   _partyColor: null,
   _waveT: null,
   _targetCanvas: null, // allows renderTextOn to target any canvas
+  _useChromaKey: false, // when true, fill transparent bg with chroma key color for GIF encoding
 };
 
 let animFrameId = null;
@@ -92,12 +93,26 @@ function renderTextContent() {
   const lines = splitText(state.text);
   if (!lines.length) return;
 
+  // Draw background with identity transform so it always covers the full canvas.
+  // Animation transforms (translate/rotate/scale) must not shift the background.
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   if (state.bgTransparent) {
-    ctx.clearRect(0, 0, 128, 128);
+    if (state._useChromaKey) {
+      // GIF has no alpha channel. Fill with a chroma key color that the GIF
+      // encoder will treat as transparent. Using clearRect would produce
+      // rgba(0,0,0,0) which maps to black in GIF — colliding with dark text.
+      const hex = '#' + TRANSPARENT_KEY.toString(16).padStart(6, '0');
+      ctx.fillStyle = hex;
+      ctx.fillRect(0, 0, 128, 128);
+    } else {
+      ctx.clearRect(0, 0, 128, 128);
+    }
   } else {
     ctx.fillStyle = state.bgColor;
     ctx.fillRect(0, 0, 128, 128);
   }
+  ctx.restore();
 
   const fontSize = calcFontSize(ctx, lines);
   const lineHeight = fontSize * 1.15;
@@ -214,6 +229,7 @@ async function download() {
 
     // Point renderTextContent at the offscreen canvas during encoding
     state._targetCanvas = offCanvas;
+    state._useChromaKey = true;
 
     const blob = await encodeWithSizeLimit(offCanvas, animFn, renderTextContent, state);
     const dataURL = await blobToDataURL(blob);
@@ -237,6 +253,7 @@ async function download() {
     statusEl.className = 'error';
   } finally {
     state._targetCanvas = null;
+    state._useChromaKey = false;
     isEncoding = false;
     downloadBtn.disabled = false;
     downloadBtn.textContent = state.selectedAnim ? 'Download GIF' : 'Download PNG';
