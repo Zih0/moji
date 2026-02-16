@@ -332,7 +332,9 @@ const timelineCreators = {
 // Create animation function that uses GSAP timeline
 const createAnimation = (animationId) => {
   const createTimeline = timelineCreators[animationId];
-  if (!createTimeline) return null;
+  if (!createTimeline) {
+    return null;
+  }
 
   return (context, normalizedTime, renderFunction, appState) => {
     const animationState = createAnimationState();

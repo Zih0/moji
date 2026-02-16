@@ -61,7 +61,9 @@ function encodeGIF(canvas, animationFunction, renderFunction, state, config) {
 async function encodeWithSizeLimit(canvas, animationFunction, renderFunction, state) {
   for (const config of CONFIGS) {
     const blob = await encodeGIF(canvas, animationFunction, renderFunction, state, config);
-    if (blob.size <= MAX_SIZE) return blob;
+    if (blob.size <= MAX_SIZE) {
+      return blob;
+    }
   }
   // Final fallback: use smallest config even if over limit
   return encodeGIF(canvas, animationFunction, renderFunction, state, CONFIGS[CONFIGS.length - 1]);

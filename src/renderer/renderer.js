@@ -86,7 +86,9 @@ const splitText = (text) => text.split("\n").filter((line) => line.length > 0);
 const measureLinesFit = (context, lines, maxWidth, maxHeight, fontSize) => {
   context.font = `bold ${fontSize}px ${state.fontFamily}`;
   const lineHeight = fontSize * 1.15;
-  if (lines.length * lineHeight > maxHeight) return false;
+  if (lines.length * lineHeight > maxHeight) {
+    return false;
+  }
   return lines.every((line) => context.measureText(line).width <= maxWidth);
 };
 
@@ -96,7 +98,9 @@ const calcFontSize = (context, lines) => {
   const maxHeight = 128 - padding * 2;
 
   for (let fontSize = 64; fontSize > 8; fontSize--) {
-    if (measureLinesFit(context, lines, maxWidth, maxHeight, fontSize)) return fontSize;
+    if (measureLinesFit(context, lines, maxWidth, maxHeight, fontSize)) {
+      return fontSize;
+    }
   }
   return 8;
 };
@@ -157,7 +161,9 @@ const renderTextContent = () => {
   const targetCanvas = state._targetCanvas || dom.canvas;
   const context = targetCanvas.getContext("2d");
   const lines = splitText(state.text);
-  if (!lines.length) return;
+  if (!lines.length) {
+    return;
+  }
 
   renderBackground(context);
 
@@ -333,7 +339,9 @@ const downloadGIF = async () => {
 };
 
 const download = async () => {
-  if (isEncoding) return;
+  if (isEncoding) {
+    return;
+  }
 
   if (!state.selectedAnim) {
     await downloadPNG();

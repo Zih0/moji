@@ -6,8 +6,11 @@
     "start": "electron .",
     "build": "electron-builder --mac dmg",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix ."
   },
+  "type": "module",
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -18,8 +21,11 @@
     "menubar": "^9.5.2"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "electron": "^34.5.8",
     "electron-builder": "^25.1.8",
+    "eslint": "^10.0.0",
+    "globals": "^17.3.0",
     "prettier": "^3.8.1"
   },
   "build": {
