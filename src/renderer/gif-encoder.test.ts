@@ -69,8 +69,8 @@ describe("CONFIGS", () => {
 });
 
 describe("createGifOptions", () => {
-  it("returns base options without transparent key when bgTransparent is false", () => {
-    const state: AppState = { _partyColor: null, _waveT: null, bgTransparent: false };
+  it("returns base options without transparent key when backgroundTransparent is false", () => {
+    const state: AppState = { _partyColor: null, _waveTime: null, backgroundTransparent: false };
     const options = createGifOptions(10, state, "/fake/worker.js");
     expect(options.quality).toBe(10);
     expect(options.width).toBe(128);
@@ -80,31 +80,31 @@ describe("createGifOptions", () => {
     expect("transparent" in options).toBe(false);
   });
 
-  it("includes transparent key when bgTransparent is true", () => {
-    const state: AppState = { _partyColor: null, _waveT: null, bgTransparent: true };
+  it("includes transparent key when backgroundTransparent is true", () => {
+    const state: AppState = { _partyColor: null, _waveTime: null, backgroundTransparent: true };
     const options = createGifOptions(10, state, "/fake/worker.js");
     expect((options as Record<string, unknown>).transparent).toBe(TRANSPARENT_KEY);
   });
 
   it("uses the provided quality value", () => {
-    const state: AppState = { _partyColor: null, _waveT: null, bgTransparent: false };
+    const state: AppState = { _partyColor: null, _waveTime: null, backgroundTransparent: false };
     expect(createGifOptions(20, state, "/fake/worker.js").quality).toBe(20);
   });
 
   it("always sets repeat to 0 (infinite loop)", () => {
-    const state: AppState = { _partyColor: null, _waveT: null, bgTransparent: false };
+    const state: AppState = { _partyColor: null, _waveTime: null, backgroundTransparent: false };
     expect(createGifOptions(10, state, "/fake/worker.js").repeat).toBe(0);
   });
 
   it("always sets dimensions to 128x128", () => {
-    const state: AppState = { _partyColor: null, _waveT: null, bgTransparent: false };
+    const state: AppState = { _partyColor: null, _waveTime: null, backgroundTransparent: false };
     const options = createGifOptions(10, state, "/fake/worker.js");
     expect(options.width).toBe(128);
     expect(options.height).toBe(128);
   });
 
   it("passes workerScript through to options", () => {
-    const state: AppState = { _partyColor: null, _waveT: null, bgTransparent: false };
+    const state: AppState = { _partyColor: null, _waveTime: null, backgroundTransparent: false };
     const options = createGifOptions(10, state, "/my/worker.js");
     expect(options.workerScript).toBe("/my/worker.js");
   });

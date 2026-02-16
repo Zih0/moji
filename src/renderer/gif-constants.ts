@@ -28,6 +28,6 @@ export function createGifOptions(quality: number, state: AppState, workerScript:
     workerScript,
     repeat: 0,
     // @types/gif.js types `transparent` as string, but gif.js actually accepts a numeric color value
-    ...(state.bgTransparent && { transparent: TRANSPARENT_KEY as never }),
+    ...(state.backgroundTransparent && { transparent: TRANSPARENT_KEY as never }),
   };
 }

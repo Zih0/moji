@@ -2,18 +2,28 @@ import { animations, animationList, AnimationFunction, AppState } from "./animat
 import { encodeWithSizeLimit, blobToDataURL, MAX_SIZE, TRANSPARENT_KEY } from "./gif-encoder";
 import { splitText, measureLinesFit } from "./text-utils";
 
+// ── Constants ──
+
+const CANVAS_SIZE = 128;
+const CANVAS_CENTER = CANVAS_SIZE / 2;
+const CANVAS_PADDING = 8;
+const LINE_HEIGHT_RATIO = 1.15;
+const MIN_FONT_SIZE = 8;
+const MAX_FONT_SIZE = 64;
+const ANIMATION_CYCLE_MS = 1000;
+
 // ── DOM References ──
 
 interface DOMReferences {
   textInput: HTMLTextAreaElement;
-  bgColorInput: HTMLInputElement;
-  bgTransparentInput: HTMLInputElement;
+  backgroundColorInput: HTMLInputElement;
+  backgroundTransparentInput: HTMLInputElement;
   fontColorInput: HTMLInputElement;
   fontSelect: HTMLSelectElement;
   canvas: HTMLCanvasElement;
-  downloadBtn: HTMLButtonElement;
-  statusEl: HTMLElement;
-  animGrid: HTMLElement;
+  downloadButton: HTMLButtonElement;
+  statusElement: HTMLElement;
+  animationGrid: HTMLElement;
 }
 
 const getElement = <T extends HTMLElement>(id: string): T => {
@@ -26,40 +36,40 @@ const getElement = <T extends HTMLElement>(id: string): T => {
 
 const dom: DOMReferences = {
   textInput: getElement<HTMLTextAreaElement>("emoji-text"),
-  bgColorInput: getElement<HTMLInputElement>("bg-color"),
-  bgTransparentInput: getElement<HTMLInputElement>("bg-transparent"),
+  backgroundColorInput: getElement<HTMLInputElement>("bg-color"),
+  backgroundTransparentInput: getElement<HTMLInputElement>("bg-transparent"),
   fontColorInput: getElement<HTMLInputElement>("font-color"),
   fontSelect: getElement<HTMLSelectElement>("font-select"),
   canvas: getElement<HTMLCanvasElement>("preview-canvas"),
-  downloadBtn: getElement<HTMLButtonElement>("download-btn"),
-  statusEl: getElement<HTMLElement>("status"),
-  animGrid: getElement<HTMLElement>("anim-grid"),
+  downloadButton: getElement<HTMLButtonElement>("download-btn"),
+  statusElement: getElement<HTMLElement>("status"),
+  animationGrid: getElement<HTMLElement>("anim-grid"),
 };
 
-dom.canvas.width = 128;
-dom.canvas.height = 128;
+dom.canvas.width = CANVAS_SIZE;
+dom.canvas.height = CANVAS_SIZE;
 
 // ── Application State ──
 
 interface ApplicationState extends AppState {
   text: string;
-  bgColor: string;
+  backgroundColor: string;
   fontColor: string;
   fontFamily: string;
-  selectedAnim: string | null;
+  selectedAnimation: string | null;
   _targetCanvas: HTMLCanvasElement | null;
   _useChromaKey: boolean;
 }
 
 const state: ApplicationState = {
   text: "",
-  bgColor: "#ffffff",
-  bgTransparent: false,
+  backgroundColor: "#ffffff",
+  backgroundTransparent: false,
   fontColor: "#000000",
   fontFamily: "-apple-system, sans-serif",
-  selectedAnim: null,
+  selectedAnimation: null,
   _partyColor: null,
-  _waveT: null,
+  _waveTime: null,
   _targetCanvas: null,
   _useChromaKey: false,
 };
@@ -69,7 +79,7 @@ let isEncoding = false;
 
 // ── Animation Grid UI ──
 
-const createAnimButton = (
+const createAnimationButton = (
   animation: { id: string; name: string },
   onSelect: (id: string, button: HTMLButtonElement) => void
 ): HTMLButtonElement => {
@@ -92,36 +102,34 @@ const createNoneButton = (
   return button;
 };
 
-const buildAnimGrid = (): void => {
-  dom.animGrid.appendChild(createNoneButton(selectAnimation));
+const buildAnimationGrid = (): void => {
+  dom.animationGrid.appendChild(createNoneButton(selectAnimation));
   animationList.forEach((animation) =>
-    dom.animGrid.appendChild(createAnimButton(animation, selectAnimation))
+    dom.animationGrid.appendChild(createAnimationButton(animation, selectAnimation))
   );
 };
 
 const selectAnimation = (animationId: string | null, buttonElement: HTMLButtonElement): void => {
-  state.selectedAnim = animationId;
-  dom.animGrid
+  state.selectedAnimation = animationId;
+  dom.animationGrid
     .querySelectorAll(".anim-btn")
     .forEach((button) => button.classList.remove("selected"));
   buttonElement.classList.add("selected");
-  dom.downloadBtn.textContent = animationId ? "Download GIF" : "Download PNG";
+  dom.downloadButton.textContent = animationId ? "Download GIF" : "Download PNG";
   updatePreview();
 };
 
 // ── Text Utilities ──
 
-const calcFontSize = (context: CanvasRenderingContext2D, lines: string[]): number => {
-  const padding = 8;
-  const maxWidth = 128 - padding * 2;
-  const maxHeight = 128 - padding * 2;
-
-  for (let fontSize = 64; fontSize > 8; fontSize--) {
+const calculateFontSize = (context: CanvasRenderingContext2D, lines: string[]): number => {
+  const maxWidth = CANVAS_SIZE - CANVAS_PADDING * 2;
+  const maxHeight = CANVAS_SIZE - CANVAS_PADDING * 2;
+  for (let fontSize = MAX_FONT_SIZE; fontSize > MIN_FONT_SIZE; fontSize--) {
     if (measureLinesFit(context, lines, maxWidth, maxHeight, fontSize, state.fontFamily)) {
       return fontSize;
     }
   }
-  return 8;
+  return MIN_FONT_SIZE;
 };
 
 // ── Background Rendering ──
@@ -132,17 +140,14 @@ const renderBackground = (context: CanvasRenderingContext2D): void => {
   context.save();
   context.setTransform(1, 0, 0, 1, 0, 0);
 
-  if (state.bgTransparent) {
-    const chromaKey = getChromaKeyColor();
-    context.fillStyle = state._useChromaKey ? chromaKey : "transparent";
-    if (state._useChromaKey) {
-      context.fillRect(0, 0, 128, 128);
-    } else {
-      context.clearRect(0, 0, 128, 128);
-    }
+  if (!state.backgroundTransparent) {
+    context.fillStyle = state.backgroundColor;
+    context.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+  } else if (state._useChromaKey) {
+    context.fillStyle = getChromaKeyColor();
+    context.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
   } else {
-    context.fillStyle = state.bgColor;
-    context.fillRect(0, 0, 128, 128);
+    context.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
   }
 
   context.restore();
@@ -158,7 +163,7 @@ const renderWaveChar = (
   charIndex: number
 ): number => {
   const charWidth = context.measureText(char).width;
-  const waveOffset = Math.sin((state._waveT ?? 0) * Math.PI * 2 + charIndex * 0.5) * 6;
+  const waveOffset = Math.sin((state._waveTime ?? 0) * Math.PI * 2 + charIndex * 0.5) * 6;
   context.fillText(char, positionX + charWidth / 2, positionY + waveOffset);
   return charWidth;
 };
@@ -169,7 +174,7 @@ const renderWaveLine = (
   positionY: number
 ): void => {
   const totalWidth = context.measureText(line).width;
-  let currentX = 64 - totalWidth / 2;
+  let currentX = CANVAS_CENTER - totalWidth / 2;
   for (let charIndex = 0; charIndex < line.length; charIndex++) {
     currentX += renderWaveChar(context, line[charIndex], currentX, positionY, charIndex);
   }
@@ -180,7 +185,7 @@ const renderStaticLine = (
   line: string,
   positionY: number
 ): void => {
-  context.fillText(line, 64, positionY);
+  context.fillText(line, CANVAS_CENTER, positionY);
 };
 
 const renderLines = (
@@ -189,8 +194,8 @@ const renderLines = (
   startY: number,
   fontSize: number
 ): void => {
-  const lineHeight = fontSize * 1.15;
-  const renderLine = state._waveT !== null ? renderWaveLine : renderStaticLine;
+  const lineHeight = fontSize * LINE_HEIGHT_RATIO;
+  const renderLine = state._waveTime !== null ? renderWaveLine : renderStaticLine;
   lines.forEach((line, index) => renderLine(context, line, startY + index * lineHeight));
 };
 
@@ -213,11 +218,9 @@ const renderTextContent = (): void => {
   }
 
   renderBackground(context);
-
-  const fontSize = calcFontSize(context, lines);
-  const lineHeight = fontSize * 1.15;
-  const startY = 64 - ((lines.length - 1) * lineHeight) / 2;
-
+  const fontSize = calculateFontSize(context, lines);
+  const lineHeight = fontSize * LINE_HEIGHT_RATIO;
+  const startY = CANVAS_CENTER - ((lines.length - 1) * lineHeight) / 2;
   setupTextStyle(context, fontSize);
   renderLines(context, lines, startY, fontSize);
 };
@@ -226,15 +229,15 @@ const renderTextContent = (): void => {
 
 const syncStateFromInputs = (): void => {
   state.text = dom.textInput.value.trim();
-  state.bgColor = dom.bgColorInput.value;
-  state.bgTransparent = dom.bgTransparentInput.checked;
+  state.backgroundColor = dom.backgroundColorInput.value;
+  state.backgroundTransparent = dom.backgroundTransparentInput.checked;
   state.fontColor = dom.fontColorInput.value;
   state.fontFamily = dom.fontSelect.value;
 };
 
 const updateUIState = (): void => {
-  dom.bgColorInput.disabled = state.bgTransparent;
-  dom.canvas.classList.toggle("transparent-bg", state.bgTransparent);
+  dom.backgroundColorInput.disabled = state.backgroundTransparent;
+  dom.canvas.classList.toggle("transparent-bg", state.backgroundTransparent);
 };
 
 const stopAnimation = (): void => {
@@ -246,14 +249,14 @@ const stopAnimation = (): void => {
 
 const showPreviewUI = (): void => {
   dom.canvas.classList.add("visible");
-  dom.downloadBtn.classList.add("visible");
-  dom.statusEl.textContent = "";
-  dom.statusEl.className = "";
+  dom.downloadButton.classList.add("visible");
+  dom.statusElement.textContent = "";
+  dom.statusElement.className = "";
 };
 
 const hidePreviewUI = (): void => {
   dom.canvas.classList.remove("visible");
-  dom.downloadBtn.classList.remove("visible");
+  dom.downloadButton.classList.remove("visible");
 };
 
 const renderStaticPreview = (): void => {
@@ -262,7 +265,7 @@ const renderStaticPreview = (): void => {
   if (!context) {
     throw new Error("Could not get 2d context");
   }
-  context.clearRect(0, 0, 128, 128);
+  context.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
   renderTextContent();
 };
 
@@ -278,7 +281,7 @@ const updatePreview = (): void => {
 
   showPreviewUI();
 
-  if (state.selectedAnim && animations[state.selectedAnim]) {
+  if (state.selectedAnimation && animations[state.selectedAnimation]) {
     startAnimationLoop();
   } else {
     renderStaticPreview();
@@ -290,24 +293,22 @@ const updatePreview = (): void => {
 const createAnimationFrame =
   (animationFunction: AnimationFunction, startTime: number) => (): void => {
     const elapsed = performance.now() - startTime;
-    const normalizedTime = (elapsed % 1000) / 1000;
-
+    const normalizedTime = (elapsed % ANIMATION_CYCLE_MS) / ANIMATION_CYCLE_MS;
     const context = dom.canvas.getContext("2d");
     if (!context) {
       throw new Error("Could not get 2d context");
     }
-    context.clearRect(0, 0, 128, 128);
+    context.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     animationFunction(context, normalizedTime, renderTextContent, state);
-
     animationFrameId = requestAnimationFrame(createAnimationFrame(animationFunction, startTime));
   };
 
 const startAnimationLoop = (): void => {
   state._targetCanvas = null;
-  if (!state.selectedAnim) {
+  if (!state.selectedAnimation) {
     return;
   }
-  const animationFunction = animations[state.selectedAnim];
+  const animationFunction = animations[state.selectedAnimation];
   if (!animationFunction) {
     return;
   }
@@ -321,85 +322,81 @@ const startAnimationLoop = (): void => {
 const downloadPNG = async (): Promise<void> => {
   state._targetCanvas = null;
   const dataURL = dom.canvas.toDataURL("image/png");
-  const fileName = `emoji_${Date.now()}.png`;
-  await saveFile(dataURL, fileName);
+  await saveFile(dataURL, `emoji_${Date.now()}.png`);
 };
 
 const createOffscreenCanvas = (): HTMLCanvasElement => {
   const offCanvas = document.createElement("canvas");
-  offCanvas.width = 128;
-  offCanvas.height = 128;
+  offCanvas.width = CANVAS_SIZE;
+  offCanvas.height = CANVAS_SIZE;
   return offCanvas;
 };
 
+const formatFileSizeKB = (blob: Blob): string => (blob.size / 1024).toFixed(1);
+
 const setEncodingUI = (encoding: boolean): void => {
   isEncoding = encoding;
-  dom.downloadBtn.disabled = encoding;
-  const downloadText = state.selectedAnim ? "Download GIF" : "Download PNG";
-  dom.downloadBtn.textContent = encoding ? "Encoding..." : downloadText;
+  dom.downloadButton.disabled = encoding;
+  const downloadText = state.selectedAnimation ? "Download GIF" : "Download PNG";
+  dom.downloadButton.textContent = encoding ? "Encoding..." : downloadText;
   if (encoding) {
-    dom.statusEl.textContent = "";
-    dom.statusEl.className = "";
+    dom.statusElement.textContent = "";
+    dom.statusElement.className = "";
   }
 };
 
 const showSizeWarning = (sizeKB: string): void => {
-  dom.statusEl.textContent = `Warning: ${sizeKB}KB (Slack limit: 128KB)`;
-  dom.statusEl.className = "error";
+  dom.statusElement.textContent = `Warning: ${sizeKB}KB (Slack limit: 128KB)`;
+  dom.statusElement.className = "error";
 };
 
 const clearStatus = (): void => {
-  dom.statusEl.textContent = "";
-  dom.statusEl.className = "";
+  dom.statusElement.textContent = "";
+  dom.statusElement.className = "";
 };
 
 const showSizeSuccess = (sizeKB: string): void => {
-  dom.statusEl.textContent = `Saved! (${sizeKB}KB)`;
-  dom.statusEl.className = "success";
+  dom.statusElement.textContent = `Saved! (${sizeKB}KB)`;
+  dom.statusElement.className = "success";
   setTimeout(clearStatus, 3000);
 };
 
-const handleEncodingResult = (blob: Blob): void => {
-  const sizeKB = (blob.size / 1024).toFixed(1);
+const showEncodingError = (error: unknown): void => {
+  dom.statusElement.textContent = error instanceof Error ? error.message : "Encoding failed";
+  dom.statusElement.className = "error";
+};
+
+const encodeAndSaveGIF = async (
+  offCanvas: HTMLCanvasElement,
+  animationFunction: AnimationFunction
+): Promise<void> => {
+  const blob = await encodeWithSizeLimit(offCanvas, animationFunction, renderTextContent, state);
+  const sizeKB = formatFileSizeKB(blob);
   if (blob.size > MAX_SIZE) {
     showSizeWarning(sizeKB);
-  } else {
+  }
+  const dataURL = await blobToDataURL(blob);
+  await saveFile(dataURL, `emoji_${Date.now()}.gif`);
+  if (blob.size <= MAX_SIZE) {
     showSizeSuccess(sizeKB);
   }
 };
 
-const showEncodingError = (error: unknown): void => {
-  dom.statusEl.textContent = error instanceof Error ? error.message : "Encoding failed";
-  dom.statusEl.className = "error";
-};
-
 const downloadGIF = async (): Promise<void> => {
-  if (!state.selectedAnim) {
+  if (!state.selectedAnimation) {
     return;
   }
-  const animationFunction = animations[state.selectedAnim];
+  const animationFunction = animations[state.selectedAnimation];
   if (!animationFunction) {
     return;
   }
-  const offCanvas = createOffscreenCanvas();
 
+  const offCanvas = createOffscreenCanvas();
   state._targetCanvas = offCanvas;
   state._useChromaKey = true;
 
   try {
-    const blob = await encodeWithSizeLimit(offCanvas, animationFunction, renderTextContent, state);
-    const dataURL = await blobToDataURL(blob);
-    const fileName = `emoji_${Date.now()}.gif`;
-
-    if (blob.size > MAX_SIZE) {
-      handleEncodingResult(blob);
-    }
-
-    await saveFile(dataURL, fileName);
-
-    if (blob.size <= MAX_SIZE) {
-      handleEncodingResult(blob);
-    }
+    await encodeAndSaveGIF(offCanvas, animationFunction);
   } catch (error) {
     showEncodingError(error);
   } finally {
@@ -413,7 +410,7 @@ const download = async (): Promise<void> => {
     return;
   }
 
-  if (!state.selectedAnim) {
+  if (!state.selectedAnimation) {
     await downloadPNG();
     return;
   }
@@ -429,16 +426,17 @@ const download = async (): Promise<void> => {
 // ── File Saving ──
 
 const showSaveSuccess = (): void => {
-  if (!dom.statusEl.textContent) {
-    dom.statusEl.textContent = "Saved to Desktop!";
-    dom.statusEl.className = "success";
-    setTimeout(clearStatus, 2000);
+  if (dom.statusElement.textContent) {
+    return;
   }
+  dom.statusElement.textContent = "Saved to Desktop!";
+  dom.statusElement.className = "success";
+  setTimeout(clearStatus, 2000);
 };
 
 const showSaveError = (error: string): void => {
-  dom.statusEl.textContent = error;
-  dom.statusEl.className = "error";
+  dom.statusElement.textContent = error;
+  dom.statusElement.className = "error";
 };
 
 interface SaveResult {
@@ -486,16 +484,16 @@ const handleMetaEnterDownload = (event: KeyboardEvent): void => {
 
 const attachEventListeners = (): void => {
   dom.textInput.addEventListener("input", updatePreview);
-  dom.bgColorInput.addEventListener("input", updatePreview);
-  dom.bgTransparentInput.addEventListener("change", updatePreview);
+  dom.backgroundColorInput.addEventListener("input", updatePreview);
+  dom.backgroundTransparentInput.addEventListener("change", updatePreview);
   dom.fontColorInput.addEventListener("input", updatePreview);
   dom.fontSelect.addEventListener("change", updatePreview);
-  dom.downloadBtn.addEventListener("click", download);
+  dom.downloadButton.addEventListener("click", download);
   dom.textInput.addEventListener("keydown", handleMetaEnterDownload);
 };
 
 // ── Initialization ──
 
-buildAnimGrid();
+buildAnimationGrid();
 loadSystemFonts();
 attachEventListeners();

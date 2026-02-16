@@ -16,7 +16,7 @@ describe("createAnimationState", () => {
       shadowBlur: 0,
       hue: 0,
       _partyColor: null,
-      _waveT: null,
+      _waveTime: null,
     });
   });
 
@@ -195,11 +195,11 @@ describe("timelineCreators", () => {
     timeline.kill();
   });
 
-  it("wave timeline sets _waveT to 1 at progress 1", () => {
+  it("wave timeline sets _waveTime to 1 at progress 1", () => {
     const state = createAnimationState();
     const timeline = timelineCreators.wave(state);
     timeline.progress(1);
-    expect(state._waveT).toBeCloseTo(1, 5);
+    expect(state._waveTime).toBeCloseTo(1, 5);
     timeline.kill();
   });
 });
