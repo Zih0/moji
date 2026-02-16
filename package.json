@@ -5,7 +5,7 @@
   "scripts": {
     "start": "npm run build:ts && ELECTRON_RUN_AS_NODE= electron .",
     "build:ts": "npm run build:main && npm run build:preload && npm run build:renderer",
-    "build:main": "esbuild src/main/main.ts --bundle --platform=node --external:electron --external:menubar --outfile=dist/main/main.js",
+    "build:main": "esbuild src/main/main.ts --bundle --platform=node --external:electron --outfile=dist/main/main.js",
     "build:preload": "esbuild src/main/preload.ts --bundle --platform=node --external:electron --outfile=dist/main/preload.js",
     "build:renderer": "esbuild src/renderer/renderer.ts --bundle --platform=browser --outfile=dist/renderer/renderer.js",
     "build": "npm run build:ts && electron-builder --mac dmg",
@@ -20,8 +20,7 @@
   "description": "macOS menu bar app for generating Slack emoji images",
   "dependencies": {
     "gif.js": "^0.2.0",
-    "gsap": "^3.14.2",
-    "menubar": "^9.5.2"
+    "gsap": "^3.14.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",

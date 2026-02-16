@@ -1,10 +1,8 @@
-import { app, ipcMain, nativeImage, Menu, IpcMainInvokeEvent } from "electron";
+import { app, ipcMain, nativeImage, Menu, Tray, BrowserWindow, IpcMainInvokeEvent } from "electron";
 import { execSync } from "child_process";
 import * as path from "path";
 import * as fs from "fs";
 import * as zlib from "zlib";
-
-import { menubar } from "menubar";
 
 interface SaveImageArgs {
   dataURL: string;
@@ -130,45 +128,66 @@ function registerIpcHandlers(): void {
   );
 }
 
-function initializeMenubar(): void {
-  const rootDir = path.join(__dirname, "..", "..");
-  const iconPath = path.join(rootDir, "assets", "iconTemplate.png");
+function createTrayIcon(iconPath: string): Tray {
+  if (fs.existsSync(iconPath)) {
+    return new Tray(iconPath);
+  }
+  const pngBuffer = createFallbackIcon();
+  const image = nativeImage.createFromBuffer(pngBuffer, { scaleFactor: 1.0 });
+  return new Tray(image);
+}
 
-  const menubarInstance = menubar({
-    dir: rootDir,
-    index: `file://${path.join(rootDir, "index.html")}`,
-    icon: iconPath,
-    showDockIcon: false,
-    preloadWindow: true,
-    browserWindow: {
-      width: 400,
-      height: 520,
-      resizable: false,
-      webPreferences: {
-        preload: path.join(__dirname, "preload.js"),
-        contextIsolation: true,
-        nodeIntegration: false,
-      },
+function createWindow(rootDirectory: string): BrowserWindow {
+  const window = new BrowserWindow({
+    width: 400,
+    height: 520,
+    show: false,
+    frame: false,
+    resizable: false,
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
     },
   });
+  window.loadURL(`file://${path.join(rootDirectory, "index.html")}`);
+  window.on("blur", () => window.hide());
+  return window;
+}
 
-  menubarInstance.on("ready", () => {
-    if (!fs.existsSync(iconPath)) {
-      const pngBuffer = createFallbackIcon();
-      const image = nativeImage.createFromBuffer(pngBuffer, { scaleFactor: 1.0 });
-      menubarInstance.tray.setImage(image);
+function positionWindowBelowTray(window: BrowserWindow, tray: Tray): void {
+  const trayBounds = tray.getBounds();
+  const windowBounds = window.getBounds();
+  const x = Math.round(trayBounds.x + trayBounds.width / 2 - windowBounds.width / 2);
+  const y = Math.round(trayBounds.y + trayBounds.height);
+  window.setPosition(x, y);
+}
+
+function initializeTray(): void {
+  const rootDirectory = path.join(__dirname, "..", "..");
+  const iconPath = path.join(rootDirectory, "assets", "iconTemplate.png");
+
+  const tray = createTrayIcon(iconPath);
+  const window = createWindow(rootDirectory);
+
+  tray.on("click", () => {
+    if (window.isVisible()) {
+      window.hide();
+    } else {
+      positionWindowBelowTray(window, tray);
+      window.show();
     }
-
-    const contextMenu = Menu.buildFromTemplate([{ label: "Exit", click: () => app.quit() }]);
-    menubarInstance.tray.on("right-click", () => {
-      menubarInstance.tray.popUpContextMenu(contextMenu);
-    });
   });
+
+  const contextMenu = Menu.buildFromTemplate([{ label: "Exit", click: () => app.quit() }]);
+  tray.on("right-click", () => tray.popUpContextMenu(contextMenu));
+
+  app.dock?.hide();
 }
 
 function initialize(): void {
   registerIpcHandlers();
-  initializeMenubar();
+  initializeTray();
 }
 
 app.whenReady().then(initialize);

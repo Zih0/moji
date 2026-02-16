@@ -66,7 +66,6 @@ npm start
 - [TypeScript](https://www.typescriptlang.org/)
 - [GSAP](https://gsap.com/) — Animation
 - [gif.js](https://jnordberg.github.io/gif.js/) — GIF encoding
-- [menubar](https://github.com/maxogden/menubar) — Menu bar integration
 - [esbuild](https://esbuild.github.io/) — Bundling
 
 ## License
