@@ -1,4 +1,3 @@
-import { ipcRenderer } from "electron";
 import { animations, animationList, AnimationFunction, AppState } from "./animations";
 import { encodeWithSizeLimit, blobToDataURL, MAX_SIZE, TRANSPARENT_KEY } from "./gif-encoder";
 
@@ -465,7 +464,7 @@ interface SaveResult {
 
 const saveFile = async (dataURL: string, fileName: string): Promise<void> => {
   try {
-    const result = (await ipcRenderer.invoke("save-image", {
+    const result = (await window.electronAPI.invoke("save-image", {
       dataURL,
       fileName,
     })) as SaveResult;
@@ -489,7 +488,7 @@ const createFontOption = (family: string): HTMLOptionElement => {
 };
 
 const loadSystemFonts = async (): Promise<void> => {
-  const fonts = (await ipcRenderer.invoke("get-system-fonts")) as string[];
+  const fonts = (await window.electronAPI.invoke("get-system-fonts")) as string[];
   fonts.forEach((family) => dom.fontSelect.appendChild(createFontOption(family)));
 };
 

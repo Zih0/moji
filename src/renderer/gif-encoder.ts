@@ -1,25 +1,6 @@
-import * as path from "path";
 import type { AnimationFunction, AppState, RenderFunction } from "./animations";
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const GIF = require("gif.js/dist/gif.js");
-
-interface GifInstance {
-  on(event: "finished", callback: (blob: Blob) => void): void;
-  on(event: "error", callback: (error: Error) => void): void;
-  addFrame(context: CanvasRenderingContext2D, options: { copy: boolean; delay: number }): void;
-  render(): void;
-}
-
-interface GifOptions {
-  workers: number;
-  quality: number;
-  width: number;
-  height: number;
-  workerScript: string;
-  repeat: number;
-  transparent?: number;
-}
+import GIF from "gif.js";
 
 interface EncoderConfig {
   frames: number;
@@ -27,16 +8,8 @@ interface EncoderConfig {
   delay: number;
 }
 
-const workerPath = path.join(
-  __dirname,
-  "..",
-  "..",
-  "node_modules",
-  "gif.js",
-  "dist",
-  "gif.worker.js"
-);
-const WORKER_SCRIPT = `file://${workerPath}`;
+const baseUrl = new URL(".", window.location.href).href;
+const WORKER_SCRIPT = `${baseUrl}node_modules/gif.js/dist/gif.worker.js`;
 export const MAX_SIZE = 128 * 1024; // 128KB Slack limit
 // Chroma key color for GIF transparency. GIF has no alpha channel, so we fill
 // "transparent" areas with this color and tell the encoder to treat it as transparent.
@@ -49,23 +22,21 @@ const CONFIGS: EncoderConfig[] = [
   { frames: 8, quality: 30, delay: 125 },
 ];
 
-function createGifOptions(quality: number, state: AppState): GifOptions {
-  const options: GifOptions = {
+function createGifOptions(quality: number, state: AppState) {
+  return {
     workers: 2,
     quality,
     width: 128,
     height: 128,
     workerScript: WORKER_SCRIPT,
     repeat: 0,
+    // @types/gif.js types `transparent` as string, but gif.js actually accepts a numeric color value
+    ...(state.bgTransparent && { transparent: TRANSPARENT_KEY as never }),
   };
-  if (state.bgTransparent) {
-    options.transparent = TRANSPARENT_KEY;
-  }
-  return options;
 }
 
 function addFrames(
-  gif: GifInstance,
+  gif: GIF,
   canvas: HTMLCanvasElement,
   animationFunction: AnimationFunction,
   renderFunction: RenderFunction,
@@ -93,10 +64,10 @@ function encodeGIF(
 ): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const { frames, quality, delay } = config;
-    const gif: GifInstance = new GIF(createGifOptions(quality, state));
+    const gif = new GIF(createGifOptions(quality, state));
     addFrames(gif, canvas, animationFunction, renderFunction, state, frames, delay);
-    gif.on("finished", resolve);
-    gif.on("error", reject);
+    gif.on("finished", (blob) => resolve(blob));
+    gif.on("abort", () => reject(new Error("GIF encoding aborted")));
     gif.render();
   });
 }

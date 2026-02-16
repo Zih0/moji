@@ -1,28 +1,21 @@
 import { app, ipcMain, nativeImage, Menu, IpcMainInvokeEvent } from "electron";
-import { menubar, Menubar } from "menubar";
 import { execSync } from "child_process";
 import * as path from "path";
 import * as fs from "fs";
 import * as zlib from "zlib";
 
-const ROOT_DIR = path.join(__dirname, "..", "..");
-const iconPath = path.join(ROOT_DIR, "assets", "iconTemplate.png");
+import { menubar } from "menubar";
 
-const menubarInstance: Menubar = menubar({
-  index: `file://${path.join(ROOT_DIR, "index.html")}`,
-  icon: iconPath,
-  showDockIcon: false,
-  preloadWindow: true,
-  browserWindow: {
-    width: 400,
-    height: 520,
-    resizable: false,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-    },
-  },
-});
+interface SaveImageArgs {
+  dataURL: string;
+  fileName: string;
+}
+
+interface SaveImageResult {
+  success: boolean;
+  path?: string;
+  error?: string;
+}
 
 function crc32(buffer: Buffer): number {
   const table = new Uint32Array(256);
@@ -103,58 +96,79 @@ function createFallbackIcon(): Buffer {
   return Buffer.concat([signature, ihdr, idat, iend]);
 }
 
-menubarInstance.on("ready", () => {
-  if (!fs.existsSync(iconPath)) {
-    const pngBuffer = createFallbackIcon();
-    const image = nativeImage.createFromBuffer(pngBuffer, { scaleFactor: 1.0 });
-    menubarInstance.tray?.setImage(image);
-  }
-
-  const contextMenu = Menu.buildFromTemplate([{ label: "Exit", click: () => app.quit() }]);
-  menubarInstance.tray?.on("right-click", () => {
-    menubarInstance.tray?.popUpContextMenu(contextMenu);
-  });
-});
-
-ipcMain.handle("get-system-fonts", async (): Promise<string[]> => {
-  try {
-    const output = execSync(
-      `osascript -l JavaScript -e 'ObjC.import("AppKit"); var mgr = $.NSFontManager.sharedFontManager; var families = mgr.availableFontFamilies; var result = []; for (var i = 0; i < families.count; i++) result.push(families.objectAtIndex(i).js); result.sort().join("\\n")'`
-    )
-      .toString()
-      .trim();
-    return output.split("\n").filter(Boolean);
-  } catch {
-    return [];
-  }
-});
-
-interface SaveImageArgs {
-  dataURL: string;
-  fileName: string;
-}
-
-interface SaveImageResult {
-  success: boolean;
-  path?: string;
-  error?: string;
-}
-
-ipcMain.handle(
-  "save-image",
-  async (
-    _event: IpcMainInvokeEvent,
-    { dataURL, fileName }: SaveImageArgs
-  ): Promise<SaveImageResult> => {
+function registerIpcHandlers(): void {
+  ipcMain.handle("get-system-fonts", async (): Promise<string[]> => {
     try {
-      const base64Data = dataURL.replace(/^data:image\/\w+;base64,/, "");
-      const buffer = Buffer.from(base64Data, "base64");
-      const desktopPath = app.getPath("desktop");
-      const filePath = path.join(desktopPath, fileName);
-      fs.writeFileSync(filePath, buffer);
-      return { success: true, path: filePath };
-    } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+      const output = execSync(
+        `osascript -l JavaScript -e 'ObjC.import("AppKit"); var mgr = $.NSFontManager.sharedFontManager; var families = mgr.availableFontFamilies; var result = []; for (var i = 0; i < families.count; i++) result.push(families.objectAtIndex(i).js); result.sort().join("\\n")'`
+      )
+        .toString()
+        .trim();
+      return output.split("\n").filter(Boolean);
+    } catch {
+      return [];
     }
-  }
-);
+  });
+
+  ipcMain.handle(
+    "save-image",
+    async (
+      _event: IpcMainInvokeEvent,
+      { dataURL, fileName }: SaveImageArgs
+    ): Promise<SaveImageResult> => {
+      try {
+        const base64Data = dataURL.replace(/^data:image\/\w+;base64,/, "");
+        const buffer = Buffer.from(base64Data, "base64");
+        const desktopPath = app.getPath("desktop");
+        const filePath = path.join(desktopPath, fileName);
+        fs.writeFileSync(filePath, buffer);
+        return { success: true, path: filePath };
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+      }
+    }
+  );
+}
+
+function initializeMenubar(): void {
+  const rootDir = path.join(__dirname, "..", "..");
+  const iconPath = path.join(rootDir, "assets", "iconTemplate.png");
+
+  const menubarInstance = menubar({
+    dir: rootDir,
+    index: `file://${path.join(rootDir, "index.html")}`,
+    icon: iconPath,
+    showDockIcon: false,
+    preloadWindow: true,
+    browserWindow: {
+      width: 400,
+      height: 520,
+      resizable: false,
+      webPreferences: {
+        preload: path.join(__dirname, "preload.js"),
+        contextIsolation: true,
+        nodeIntegration: false,
+      },
+    },
+  });
+
+  menubarInstance.on("ready", () => {
+    if (!fs.existsSync(iconPath)) {
+      const pngBuffer = createFallbackIcon();
+      const image = nativeImage.createFromBuffer(pngBuffer, { scaleFactor: 1.0 });
+      menubarInstance.tray.setImage(image);
+    }
+
+    const contextMenu = Menu.buildFromTemplate([{ label: "Exit", click: () => app.quit() }]);
+    menubarInstance.tray.on("right-click", () => {
+      menubarInstance.tray.popUpContextMenu(contextMenu);
+    });
+  });
+}
+
+function initialize(): void {
+  registerIpcHandlers();
+  initializeMenubar();
+}
+
+app.whenReady().then(initialize);
