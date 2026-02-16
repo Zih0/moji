@@ -1,7 +1,7 @@
 {
   "name": "quick-emoji",
   "version": "1.0.0",
-  "main": "main.js",
+  "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
     "build": "electron-builder --mac dmg"
@@ -12,6 +12,7 @@
   "description": "macOS menu bar app for generating Slack emoji images",
   "dependencies": {
     "gif.js": "^0.2.0",
+    "gsap": "^3.14.2",
     "menubar": "^9.5.2"
   },
   "devDependencies": {
@@ -43,11 +44,8 @@
       ]
     },
     "files": [
-      "main.js",
+      "src/**/*",
       "index.html",
-      "renderer.js",
-      "animations.js",
-      "gif-encoder.js",
       "settings.json",
       "assets/**/*"
     ]

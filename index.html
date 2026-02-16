@@ -1,340 +1,436 @@
 <!DOCTYPE html>
 <html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quick Emoji</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quick Emoji</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
-      background: #f5f5f7;
-      color: #1d1d1f;
-      padding: 4px;
-      width: 320px;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      user-select: none;
-    }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+          "Helvetica Neue", sans-serif;
+        background: #f0f0f0;
+        color: #1d1d1f;
+        padding: 12px;
+        width: 380px;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        user-select: none;
+      }
 
-    .app-title {
-      font-size: 11px;
-      font-weight: 600;
-      color: #86868b;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      text-align: center;
-      margin-bottom: 12px;
-    }
+      /* ─── Hero Section: Preview ─── */
+      .hero {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 16px;
+        background: #fff;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      }
 
-    #emoji-text {
-      width: 100%;
-      padding: 4px;
-      font-size: 13px;
-      font-family: inherit;
-      border: 1px solid #d2d2d7;
-      border-radius: 8px;
-      background: #fff;
-      color: #1d1d1f;
-      outline: none;
-      resize: none;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-      margin-bottom: 10px;
-    }
+      #preview-canvas {
+        width: 64px;
+        height: 64px;
+        border-radius: 12px;
+        display: none;
+        image-rendering: auto;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
 
-    #emoji-text:focus {
-      border-color: #007AFF;
-      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
-    }
+      #preview-canvas.visible {
+        display: block;
+      }
 
-    #emoji-text::placeholder {
-      color: #aaabb0;
-    }
+      #preview-canvas.transparent-bg {
+        background-image: linear-gradient(45deg, #e0e0e0 25%, transparent 25%),
+          linear-gradient(-45deg, #e0e0e0 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, #e0e0e0 75%),
+          linear-gradient(-45deg, transparent 75%, #e0e0e0 75%);
+        background-size: 12px 12px;
+        background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+      }
 
-    .controls {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      margin-bottom: 10px;
-    }
+      .placeholder-box {
+        width: 64px;
+        height: 64px;
+        border: 2px dashed #d1d1d6;
+        border-radius: 12px;
+        background: #f9f9f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #c7c7cc;
+        font-size: 20px;
+      }
 
-    .control-group {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
+      #preview-canvas.visible ~ .placeholder-box {
+        display: none;
+      }
 
-    .control-label {
-      font-size: 10px;
-      font-weight: 600;
-      color: #86868b;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-      white-space: nowrap;
-    }
+      #download-btn {
+        margin-top: 12px;
+        height: 32px;
+        padding: 0 20px;
+        background: linear-gradient(180deg, #007aff 0%, #0066d6 100%);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        display: none;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2),
+          inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        transition: all 0.15s ease;
+      }
 
-    input[type="color"] {
-      -webkit-appearance: none;
-      width: 28px;
-      height: 28px;
-      border: 1px solid #d2d2d7;
-      border-radius: 6px;
-      cursor: pointer;
-      padding: 2px;
-    }
+      #download-btn.visible {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
 
-    input[type="color"]::-webkit-color-swatch-wrapper {
-      padding: 0;
-    }
+      #download-btn:hover:not(:disabled) {
+        background: linear-gradient(180deg, #1a85ff 0%, #0073e6 100%);
+      }
 
-    input[type="color"]::-webkit-color-swatch {
-      border: none;
-      border-radius: 4px;
-    }
+      #download-btn:active:not(:disabled) {
+        transform: scale(0.98);
+        background: linear-gradient(180deg, #0066d6 0%, #0055b3 100%);
+      }
 
-    #font-select {
-      flex: 1;
-      min-width: 0;
-      height: 28px;
-      font-size: 11px;
-      font-family: inherit;
-      border: 1px solid #d2d2d7;
-      border-radius: 6px;
-      background: #fff;
-      color: #1d1d1f;
-      padding: 0 4px;
-      outline: none;
-    }
+      #download-btn:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
 
-    .preview-area {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
+      #status {
+        margin-top: 8px;
+        text-align: center;
+        font-size: 11px;
+        min-height: 16px;
+        color: #86868b;
+        font-weight: 500;
+      }
 
-    #preview-canvas {
-      width: 128px;
-      height: 128px;
-      border: 1px solid #ddd;
-      border-radius: 12px;
-      display: none;
-      transition: opacity 0.3s ease;
-      image-rendering: pixelated;
-      image-rendering: -moz-crisp-edges;
-    }
+      #status.error {
+        color: #ff3b30;
+      }
+      #status.success {
+        color: #34c759;
+      }
 
-    #preview-canvas.visible {
-      display: block;
-    }
+      /* ─── Input Section ─── */
+      .input-section {
+        margin-bottom: 12px;
+      }
 
-    #preview-canvas.transparent-bg {
-      background-image:
-        linear-gradient(45deg, #ccc 25%, transparent 25%),
-        linear-gradient(-45deg, #ccc 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, #ccc 75%),
-        linear-gradient(-45deg, transparent 75%, #ccc 75%);
-      background-size: 16px 16px;
-      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
-    }
+      #emoji-text {
+        width: 100%;
+        padding: 10px 12px;
+        font-size: 15px;
+        font-family: inherit;
+        border: none;
+        border-radius: 10px;
+        background: #fff;
+        color: #1d1d1f;
+        outline: none;
+        resize: none;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08),
+          inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+        transition: box-shadow 0.2s ease;
+      }
 
-    .transparent-toggle {
-      display: flex;
-      align-items: center;
-      gap: 2px;
-      cursor: pointer;
-    }
+      #emoji-text:focus {
+        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.25),
+          0 1px 3px rgba(0, 0, 0, 0.08);
+      }
 
-    .transparent-toggle input[type="checkbox"] {
-      width: 14px;
-      height: 14px;
-      margin: 0;
-      cursor: pointer;
-      accent-color: #007AFF;
-    }
+      #emoji-text::placeholder {
+        color: #8e8e93;
+      }
 
-    .toggle-label {
-      font-size: 10px;
-      font-weight: 600;
-      color: #86868b;
-      letter-spacing: 0.3px;
-      white-space: nowrap;
-    }
+      /* ─── Settings Cards ─── */
+      .settings-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
 
-    .placeholder-box {
-      width: 128px;
-      height: 128px;
-      border: 1px dashed #d2d2d7;
-      border-radius: 12px;
-      background: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #c7c7cc;
-      font-size: 32px;
-    }
+      .setting-card {
+        background: #fff;
+        border-radius: 10px;
+        padding: 10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      }
 
-    #preview-canvas.visible ~ .placeholder-box {
-      display: none;
-    }
+      .setting-card-label {
+        font-size: 10px;
+        font-weight: 600;
+        color: #86868b;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        margin-bottom: 8px;
+      }
 
-    /* Animation grid */
-    .anim-section-label {
-      font-size: 10px;
-      font-weight: 600;
-      color: #86868b;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-      text-align: center;
-      margin-bottom: 6px;
-    }
+      .setting-card-content {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
 
-    .anim-grid {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 4px;
-      max-height: 130px;
-      overflow-y: auto;
-      margin-bottom: 10px;
-      padding: 2px;
-    }
+      /* Font Select */
+      #font-select {
+        flex: 1;
+        height: 28px;
+        font-size: 12px;
+        font-family: inherit;
+        font-weight: 500;
+        border: none;
+        border-radius: 6px;
+        background: linear-gradient(180deg, #f8f8f8 0%, #f0f0f0 100%);
+        color: #1d1d1f;
+        padding: 0 24px 0 8px;
+        outline: none;
+        cursor: pointer;
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg width='8' height='6' viewBox='0 0 8 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L4 4.5L7 1.5' stroke='%23636366' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+      }
 
-    .anim-grid::-webkit-scrollbar {
-      width: 4px;
-    }
+      #font-select:focus {
+        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.25),
+          inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+      }
 
-    .anim-grid::-webkit-scrollbar-thumb {
-      background: #d2d2d7;
-      border-radius: 2px;
-    }
+      /* Color Picker */
+      .color-picker-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
 
-    .anim-btn {
-      font-family: inherit;
-      font-size: 9px;
-      font-weight: 500;
-      padding: 6px 2px;
-      border: 1px solid #d2d2d7;
-      border-radius: 6px;
-      background: #fff;
-      color: #1d1d1f;
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.15s ease;
-      line-height: 1.2;
-    }
+      .color-picker-label {
+        font-size: 11px;
+        font-weight: 500;
+        color: #3c3c43;
+        min-width: 24px;
+      }
 
-    .anim-btn:hover {
-      background: #e8e8ed;
-    }
+      input[type="color"] {
+        -webkit-appearance: none;
+        width: 28px;
+        height: 28px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        padding: 0;
+        background: transparent;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15),
+          inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+        transition: transform 0.1s ease, box-shadow 0.15s ease;
+      }
 
-    .anim-btn.selected {
-      background: #007AFF;
-      color: #fff;
-      border-color: #007AFF;
-    }
+      input[type="color"]::-webkit-color-swatch-wrapper {
+        padding: 3px;
+      }
 
-    button {
-      font-family: inherit;
-      font-size: 13px;
-      font-weight: 500;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: opacity 0.15s ease, transform 0.1s ease;
-      outline: none;
-    }
+      input[type="color"]::-webkit-color-swatch {
+        border: none;
+        border-radius: 4px;
+      }
 
-    button:active {
-      transform: scale(0.97);
-    }
+      input[type="color"]:hover {
+        transform: scale(1.05);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2),
+          inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+      }
 
-    button:disabled {
-      opacity: 0.5;
-      cursor: default;
-      transform: none;
-    }
+      /* Toggle Switch */
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
+      }
 
-    #download-btn {
-      height: 32px;
-      padding: 0 12px;
-      background: #34C759;
-      color: #fff;
-      display: none;
-      transition: opacity 0.3s ease;
-    }
+      .toggle-row-label {
+        font-size: 12px;
+        font-weight: 500;
+        color: #1d1d1f;
+      }
 
-    #download-btn.visible {
-      display: inline-block;
-    }
+      .toggle-switch {
+        position: relative;
+        width: 34px;
+        height: 20px;
+      }
 
-    #download-btn:hover:not(:disabled) {
-      opacity: 0.88;
-    }
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
 
-    #status {
-      text-align: center;
-      font-size: 12px;
-      min-height: 18px;
-      color: #86868b;
-      transition: color 0.2s ease, opacity 0.2s ease;
-    }
+      .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #e9e9eb;
+        border-radius: 10px;
+        transition: background 0.25s ease;
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+      }
 
-    #status.error {
-      color: #FF3B30;
-    }
+      .toggle-slider::before {
+        content: "";
+        position: absolute;
+        height: 18px;
+        width: 18px;
+        left: 1px;
+        bottom: 1px;
+        background: #fff;
+        border-radius: 50%;
+        transition: transform 0.25s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2),
+          0 0 0 0.5px rgba(0, 0, 0, 0.04);
+      }
 
-    #status.success {
-      color: #34C759;
-    }
-  </style>
-</head>
-<body>
-  <div class="app-title">Quick Emoji</div>
+      .toggle-switch input:checked + .toggle-slider {
+        background: #34c759;
+      }
 
-  <textarea id="emoji-text" placeholder="텍스트를 입력하세요..." autocomplete="off" spellcheck="false" rows="2"></textarea>
+      .toggle-switch input:checked + .toggle-slider::before {
+        transform: translateX(14px);
+      }
 
-  <div class="preview-area">
-    <canvas id="preview-canvas" width="128" height="128"></canvas>
-    <div class="placeholder-box" style="image-rendering: pixelated;">🎨</div>
-  </div>
+      /* ─── Animation Section ─── */
+      .animation-section {
+        background: #fff;
+        border-radius: 10px;
+        padding: 10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      }
 
-  <div class="controls">
-    <select id="font-select">
-      <option value="-apple-system, sans-serif">System Default</option>
-    </select>
-    <div class="control-group">
-      <span class="control-label">배경</span>
-      <input type="color" id="bg-color" value="#ffffff">
-      <label class="transparent-toggle" title="투명 배경">
-        <input type="checkbox" id="bg-transparent">
-        <span class="toggle-label">투명</span>
-      </label>
+      .animation-header {
+        font-size: 10px;
+        font-weight: 600;
+        color: #86868b;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        margin-bottom: 8px;
+      }
+
+      .anim-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 6px;
+      }
+
+      .anim-btn {
+        font-family: inherit;
+        font-size: 10px;
+        font-weight: 500;
+        padding: 8px 4px;
+        border: none;
+        border-radius: 6px;
+        background: #f5f5f5;
+        color: #3c3c43;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.15s ease;
+        line-height: 1.2;
+      }
+
+      .anim-btn:hover {
+        background: #eaeaea;
+      }
+
+      .anim-btn:active {
+        background: #e0e0e0;
+        transform: scale(0.96);
+      }
+
+      .anim-btn.selected {
+        background: linear-gradient(180deg, #007aff 0%, #0066d6 100%);
+        color: #fff;
+        box-shadow: 0 2px 4px rgba(0, 102, 214, 0.3);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Input (Top Priority) -->
+    <div class="input-section">
+      <textarea
+        id="emoji-text"
+        placeholder="Enter text..."
+        autocomplete="off"
+        spellcheck="false"
+        rows="2"
+      ></textarea>
     </div>
-    <div class="control-group">
-      <span class="control-label">글자</span>
-      <input type="color" id="font-color" value="#000000">
+
+    <!-- Preview + Download -->
+    <div class="hero">
+      <canvas id="preview-canvas" width="128" height="128"></canvas>
+      <div class="placeholder-box">Aa</div>
+      <button id="download-btn">Download PNG</button>
+      <div id="status"></div>
     </div>
-    <label class="transparent-toggle" title="픽셀 도트 아트">
-      <input type="checkbox" id="pixel-art" checked>
-      <span class="toggle-label">도트</span>
-    </label>
-  </div>
 
-  <div class="anim-section-label">Animation</div>
-  <div class="anim-grid" id="anim-grid"></div>
+    <!-- Settings -->
+    <div class="settings-row">
+      <div class="setting-card">
+        <div class="setting-card-label">Font</div>
+        <div class="setting-card-content">
+          <select id="font-select">
+            <option value="-apple-system, sans-serif">System</option>
+          </select>
+        </div>
+      </div>
+      <div class="setting-card">
+        <div class="setting-card-label">Colors</div>
+        <div class="setting-card-content">
+          <div class="color-picker-group">
+            <span class="color-picker-label">Bg</span>
+            <input type="color" id="bg-color" value="#ffffff" />
+          </div>
+          <div class="color-picker-group">
+            <span class="color-picker-label">Fg</span>
+            <input type="color" id="font-color" value="#000000" />
+          </div>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-row-label">Transparent</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="bg-transparent" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
 
-  <div style="text-align: center; margin-bottom: 8px;">
-    <button id="download-btn">Download PNG</button>
-  </div>
+    <!-- Animation -->
+    <div class="animation-section">
+      <div class="animation-header">Animation</div>
+      <div class="anim-grid" id="anim-grid"></div>
+    </div>
 
-  <div id="status"></div>
-
-  <script src="renderer.js"></script>
-</body>
+    <script src="src/renderer/renderer.js"></script>
+  </body>
 </html>
