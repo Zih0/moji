@@ -1,24 +1,39 @@
-const path = require("path");
-const { ipcRenderer } = require("electron");
-const { animations, animationList } = require(
-  path.join(__dirname, "src", "renderer", "animations")
-);
-const { encodeWithSizeLimit, blobToDataURL, MAX_SIZE, TRANSPARENT_KEY } = require(
-  path.join(__dirname, "src", "renderer", "gif-encoder")
-);
+import { ipcRenderer } from "electron";
+import { animations, animationList, AnimationFunction, AppState } from "./animations";
+import { encodeWithSizeLimit, blobToDataURL, MAX_SIZE, TRANSPARENT_KEY } from "./gif-encoder";
 
 // ── DOM References ──
 
-const dom = {
-  textInput: document.getElementById("emoji-text"),
-  bgColorInput: document.getElementById("bg-color"),
-  bgTransparentInput: document.getElementById("bg-transparent"),
-  fontColorInput: document.getElementById("font-color"),
-  fontSelect: document.getElementById("font-select"),
-  canvas: document.getElementById("preview-canvas"),
-  downloadBtn: document.getElementById("download-btn"),
-  statusEl: document.getElementById("status"),
-  animGrid: document.getElementById("anim-grid"),
+interface DOMReferences {
+  textInput: HTMLTextAreaElement;
+  bgColorInput: HTMLInputElement;
+  bgTransparentInput: HTMLInputElement;
+  fontColorInput: HTMLInputElement;
+  fontSelect: HTMLSelectElement;
+  canvas: HTMLCanvasElement;
+  downloadBtn: HTMLButtonElement;
+  statusEl: HTMLElement;
+  animGrid: HTMLElement;
+}
+
+const getElement = <T extends HTMLElement>(id: string): T => {
+  const element = document.getElementById(id);
+  if (!element) {
+    throw new Error(`Element not found: ${id}`);
+  }
+  return element as T;
+};
+
+const dom: DOMReferences = {
+  textInput: getElement<HTMLTextAreaElement>("emoji-text"),
+  bgColorInput: getElement<HTMLInputElement>("bg-color"),
+  bgTransparentInput: getElement<HTMLInputElement>("bg-transparent"),
+  fontColorInput: getElement<HTMLInputElement>("font-color"),
+  fontSelect: getElement<HTMLSelectElement>("font-select"),
+  canvas: getElement<HTMLCanvasElement>("preview-canvas"),
+  downloadBtn: getElement<HTMLButtonElement>("download-btn"),
+  statusEl: getElement<HTMLElement>("status"),
+  animGrid: getElement<HTMLElement>("anim-grid"),
 };
 
 dom.canvas.width = 128;
@@ -26,7 +41,17 @@ dom.canvas.height = 128;
 
 // ── Application State ──
 
-const state = {
+interface ApplicationState extends AppState {
+  text: string;
+  bgColor: string;
+  fontColor: string;
+  fontFamily: string;
+  selectedAnim: string | null;
+  _targetCanvas: HTMLCanvasElement | null;
+  _useChromaKey: boolean;
+}
+
+const state: ApplicationState = {
   text: "",
   bgColor: "#ffffff",
   bgTransparent: false,
@@ -39,12 +64,15 @@ const state = {
   _useChromaKey: false,
 };
 
-let animationFrameId = null;
+let animationFrameId: number | null = null;
 let isEncoding = false;
 
 // ── Animation Grid UI ──
 
-const createAnimButton = (animation, onSelect) => {
+const createAnimButton = (
+  animation: { id: string; name: string },
+  onSelect: (id: string, button: HTMLButtonElement) => void
+): HTMLButtonElement => {
   const button = document.createElement("button");
   button.className = "anim-btn";
   button.textContent = animation.name;
@@ -53,7 +81,9 @@ const createAnimButton = (animation, onSelect) => {
   return button;
 };
 
-const createNoneButton = (onSelect) => {
+const createNoneButton = (
+  onSelect: (id: string | null, button: HTMLButtonElement) => void
+): HTMLButtonElement => {
   const button = document.createElement("button");
   button.className = "anim-btn selected";
   button.textContent = "None";
@@ -62,14 +92,14 @@ const createNoneButton = (onSelect) => {
   return button;
 };
 
-const buildAnimGrid = () => {
+const buildAnimGrid = (): void => {
   dom.animGrid.appendChild(createNoneButton(selectAnimation));
   animationList.forEach((animation) =>
     dom.animGrid.appendChild(createAnimButton(animation, selectAnimation))
   );
 };
 
-const selectAnimation = (animationId, buttonElement) => {
+const selectAnimation = (animationId: string | null, buttonElement: HTMLButtonElement): void => {
   state.selectedAnim = animationId;
   dom.animGrid
     .querySelectorAll(".anim-btn")
@@ -81,9 +111,15 @@ const selectAnimation = (animationId, buttonElement) => {
 
 // ── Text Utilities ──
 
-const splitText = (text) => text.split("\n").filter((line) => line.length > 0);
+const splitText = (text: string): string[] => text.split("\n").filter((line) => line.length > 0);
 
-const measureLinesFit = (context, lines, maxWidth, maxHeight, fontSize) => {
+const measureLinesFit = (
+  context: CanvasRenderingContext2D,
+  lines: string[],
+  maxWidth: number,
+  maxHeight: number,
+  fontSize: number
+): boolean => {
   context.font = `bold ${fontSize}px ${state.fontFamily}`;
   const lineHeight = fontSize * 1.15;
   if (lines.length * lineHeight > maxHeight) {
@@ -92,7 +128,7 @@ const measureLinesFit = (context, lines, maxWidth, maxHeight, fontSize) => {
   return lines.every((line) => context.measureText(line).width <= maxWidth);
 };
 
-const calcFontSize = (context, lines) => {
+const calcFontSize = (context: CanvasRenderingContext2D, lines: string[]): number => {
   const padding = 8;
   const maxWidth = 128 - padding * 2;
   const maxHeight = 128 - padding * 2;
@@ -107,16 +143,20 @@ const calcFontSize = (context, lines) => {
 
 // ── Background Rendering ──
 
-const getChromaKeyColor = () => "#" + TRANSPARENT_KEY.toString(16).padStart(6, "0");
+const getChromaKeyColor = (): string => "#" + TRANSPARENT_KEY.toString(16).padStart(6, "0");
 
-const renderBackground = (context) => {
+const renderBackground = (context: CanvasRenderingContext2D): void => {
   context.save();
   context.setTransform(1, 0, 0, 1, 0, 0);
 
   if (state.bgTransparent) {
     const chromaKey = getChromaKeyColor();
     context.fillStyle = state._useChromaKey ? chromaKey : "transparent";
-    state._useChromaKey ? context.fillRect(0, 0, 128, 128) : context.clearRect(0, 0, 128, 128);
+    if (state._useChromaKey) {
+      context.fillRect(0, 0, 128, 128);
+    } else {
+      context.clearRect(0, 0, 128, 128);
+    }
   } else {
     context.fillStyle = state.bgColor;
     context.fillRect(0, 0, 128, 128);
@@ -127,14 +167,24 @@ const renderBackground = (context) => {
 
 // ── Text Rendering ──
 
-const renderWaveChar = (context, char, positionX, positionY, charIndex) => {
+const renderWaveChar = (
+  context: CanvasRenderingContext2D,
+  char: string,
+  positionX: number,
+  positionY: number,
+  charIndex: number
+): number => {
   const charWidth = context.measureText(char).width;
-  const waveOffset = Math.sin(state._waveT * Math.PI * 2 + charIndex * 0.5) * 6;
+  const waveOffset = Math.sin((state._waveT ?? 0) * Math.PI * 2 + charIndex * 0.5) * 6;
   context.fillText(char, positionX + charWidth / 2, positionY + waveOffset);
   return charWidth;
 };
 
-const renderWaveLine = (context, line, positionY) => {
+const renderWaveLine = (
+  context: CanvasRenderingContext2D,
+  line: string,
+  positionY: number
+): void => {
   const totalWidth = context.measureText(line).width;
   let currentX = 64 - totalWidth / 2;
   for (let charIndex = 0; charIndex < line.length; charIndex++) {
@@ -142,24 +192,38 @@ const renderWaveLine = (context, line, positionY) => {
   }
 };
 
-const renderStaticLine = (context, line, positionY) => context.fillText(line, 64, positionY);
+const renderStaticLine = (
+  context: CanvasRenderingContext2D,
+  line: string,
+  positionY: number
+): void => {
+  context.fillText(line, 64, positionY);
+};
 
-const renderLines = (context, lines, startY, fontSize) => {
+const renderLines = (
+  context: CanvasRenderingContext2D,
+  lines: string[],
+  startY: number,
+  fontSize: number
+): void => {
   const lineHeight = fontSize * 1.15;
   const renderLine = state._waveT !== null ? renderWaveLine : renderStaticLine;
   lines.forEach((line, index) => renderLine(context, line, startY + index * lineHeight));
 };
 
-const setupTextStyle = (context, fontSize) => {
+const setupTextStyle = (context: CanvasRenderingContext2D, fontSize: number): void => {
   context.font = `bold ${fontSize}px ${state.fontFamily}`;
   context.fillStyle = state._partyColor || state.fontColor;
   context.textAlign = "center";
   context.textBaseline = "middle";
 };
 
-const renderTextContent = () => {
+const renderTextContent = (): void => {
   const targetCanvas = state._targetCanvas || dom.canvas;
   const context = targetCanvas.getContext("2d");
+  if (!context) {
+    throw new Error("Could not get 2d context");
+  }
   const lines = splitText(state.text);
   if (!lines.length) {
     return;
@@ -177,7 +241,7 @@ const renderTextContent = () => {
 
 // ── Preview Logic ──
 
-const syncStateFromInputs = () => {
+const syncStateFromInputs = (): void => {
   state.text = dom.textInput.value.trim();
   state.bgColor = dom.bgColorInput.value;
   state.bgTransparent = dom.bgTransparentInput.checked;
@@ -185,38 +249,41 @@ const syncStateFromInputs = () => {
   state.fontFamily = dom.fontSelect.value;
 };
 
-const updateUIState = () => {
+const updateUIState = (): void => {
   dom.bgColorInput.disabled = state.bgTransparent;
   dom.canvas.classList.toggle("transparent-bg", state.bgTransparent);
 };
 
-const stopAnimation = () => {
+const stopAnimation = (): void => {
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId);
     animationFrameId = null;
   }
 };
 
-const showPreviewUI = () => {
+const showPreviewUI = (): void => {
   dom.canvas.classList.add("visible");
   dom.downloadBtn.classList.add("visible");
   dom.statusEl.textContent = "";
   dom.statusEl.className = "";
 };
 
-const hidePreviewUI = () => {
+const hidePreviewUI = (): void => {
   dom.canvas.classList.remove("visible");
   dom.downloadBtn.classList.remove("visible");
 };
 
-const renderStaticPreview = () => {
+const renderStaticPreview = (): void => {
   state._targetCanvas = null;
   const context = dom.canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Could not get 2d context");
+  }
   context.clearRect(0, 0, 128, 128);
   renderTextContent();
 };
 
-const updatePreview = () => {
+const updatePreview = (): void => {
   syncStateFromInputs();
   updateUIState();
   stopAnimation();
@@ -237,20 +304,30 @@ const updatePreview = () => {
 
 // ── Animation Loop ──
 
-const createAnimationFrame = (animationFunction, startTime) => () => {
-  const elapsed = performance.now() - startTime;
-  const normalizedTime = (elapsed % 1000) / 1000;
+const createAnimationFrame =
+  (animationFunction: AnimationFunction, startTime: number) => (): void => {
+    const elapsed = performance.now() - startTime;
+    const normalizedTime = (elapsed % 1000) / 1000;
 
-  const context = dom.canvas.getContext("2d");
-  context.clearRect(0, 0, 128, 128);
-  animationFunction(context, normalizedTime, renderTextContent, state);
+    const context = dom.canvas.getContext("2d");
+    if (!context) {
+      throw new Error("Could not get 2d context");
+    }
+    context.clearRect(0, 0, 128, 128);
+    animationFunction(context, normalizedTime, renderTextContent, state);
 
-  animationFrameId = requestAnimationFrame(createAnimationFrame(animationFunction, startTime));
-};
+    animationFrameId = requestAnimationFrame(createAnimationFrame(animationFunction, startTime));
+  };
 
-const startAnimationLoop = () => {
+const startAnimationLoop = (): void => {
   state._targetCanvas = null;
+  if (!state.selectedAnim) {
+    return;
+  }
   const animationFunction = animations[state.selectedAnim];
+  if (!animationFunction) {
+    return;
+  }
   animationFrameId = requestAnimationFrame(
     createAnimationFrame(animationFunction, performance.now())
   );
@@ -258,21 +335,21 @@ const startAnimationLoop = () => {
 
 // ── Download ──
 
-const downloadPNG = async () => {
+const downloadPNG = async (): Promise<void> => {
   state._targetCanvas = null;
   const dataURL = dom.canvas.toDataURL("image/png");
   const fileName = `emoji_${Date.now()}.png`;
   await saveFile(dataURL, fileName);
 };
 
-const createOffscreenCanvas = () => {
+const createOffscreenCanvas = (): HTMLCanvasElement => {
   const offCanvas = document.createElement("canvas");
   offCanvas.width = 128;
   offCanvas.height = 128;
   return offCanvas;
 };
 
-const setEncodingUI = (encoding) => {
+const setEncodingUI = (encoding: boolean): void => {
   isEncoding = encoding;
   dom.downloadBtn.disabled = encoding;
   const downloadText = state.selectedAnim ? "Download GIF" : "Download PNG";
@@ -283,34 +360,44 @@ const setEncodingUI = (encoding) => {
   }
 };
 
-const showSizeWarning = (sizeKB) => {
+const showSizeWarning = (sizeKB: string): void => {
   dom.statusEl.textContent = `Warning: ${sizeKB}KB (Slack limit: 128KB)`;
   dom.statusEl.className = "error";
 };
 
-const clearStatus = () => {
+const clearStatus = (): void => {
   dom.statusEl.textContent = "";
   dom.statusEl.className = "";
 };
 
-const showSizeSuccess = (sizeKB) => {
+const showSizeSuccess = (sizeKB: string): void => {
   dom.statusEl.textContent = `Saved! (${sizeKB}KB)`;
   dom.statusEl.className = "success";
   setTimeout(clearStatus, 3000);
 };
 
-const handleEncodingResult = (blob) => {
+const handleEncodingResult = (blob: Blob): void => {
   const sizeKB = (blob.size / 1024).toFixed(1);
-  blob.size > MAX_SIZE ? showSizeWarning(sizeKB) : showSizeSuccess(sizeKB);
+  if (blob.size > MAX_SIZE) {
+    showSizeWarning(sizeKB);
+  } else {
+    showSizeSuccess(sizeKB);
+  }
 };
 
-const showEncodingError = (error) => {
-  dom.statusEl.textContent = error?.message || "Encoding failed";
+const showEncodingError = (error: unknown): void => {
+  dom.statusEl.textContent = error instanceof Error ? error.message : "Encoding failed";
   dom.statusEl.className = "error";
 };
 
-const downloadGIF = async () => {
+const downloadGIF = async (): Promise<void> => {
+  if (!state.selectedAnim) {
+    return;
+  }
   const animationFunction = animations[state.selectedAnim];
+  if (!animationFunction) {
+    return;
+  }
   const offCanvas = createOffscreenCanvas();
 
   state._targetCanvas = offCanvas;
@@ -338,7 +425,7 @@ const downloadGIF = async () => {
   }
 };
 
-const download = async () => {
+const download = async (): Promise<void> => {
   if (isEncoding) {
     return;
   }
@@ -358,7 +445,7 @@ const download = async () => {
 
 // ── File Saving ──
 
-const showSaveSuccess = () => {
+const showSaveSuccess = (): void => {
   if (!dom.statusEl.textContent) {
     dom.statusEl.textContent = "Saved to Desktop!";
     dom.statusEl.className = "success";
@@ -366,46 +453,55 @@ const showSaveSuccess = () => {
   }
 };
 
-const showSaveError = (error) => {
+const showSaveError = (error: string): void => {
   dom.statusEl.textContent = error;
   dom.statusEl.className = "error";
 };
 
-const saveFile = async (dataURL, fileName) => {
+interface SaveResult {
+  success: boolean;
+  error?: string;
+}
+
+const saveFile = async (dataURL: string, fileName: string): Promise<void> => {
   try {
-    const result = await ipcRenderer.invoke("save-image", {
+    const result = (await ipcRenderer.invoke("save-image", {
       dataURL,
       fileName,
-    });
-    result.success ? showSaveSuccess() : showSaveError(result?.error ?? "Save failed");
+    })) as SaveResult;
+    if (result.success) {
+      showSaveSuccess();
+    } else {
+      showSaveError(result?.error ?? "Save failed");
+    }
   } catch (error) {
-    showSaveError(error?.message);
+    showSaveError(error instanceof Error ? error.message : "Save failed");
   }
 };
 
 // ── System Fonts ──
 
-const createFontOption = (family) => {
+const createFontOption = (family: string): HTMLOptionElement => {
   const option = document.createElement("option");
   option.value = `"${family}"`;
   option.textContent = family;
   return option;
 };
 
-const loadSystemFonts = async () => {
-  const fonts = await ipcRenderer.invoke("get-system-fonts");
+const loadSystemFonts = async (): Promise<void> => {
+  const fonts = (await ipcRenderer.invoke("get-system-fonts")) as string[];
   fonts.forEach((family) => dom.fontSelect.appendChild(createFontOption(family)));
 };
 
 // ── Event Handlers ──
 
-const handleMetaEnterDownload = (event) => {
+const handleMetaEnterDownload = (event: KeyboardEvent): void => {
   if (event.key === "Enter" && event.metaKey && dom.canvas.classList.contains("visible")) {
     download();
   }
 };
 
-const attachEventListeners = () => {
+const attachEventListeners = (): void => {
   dom.textInput.addEventListener("input", updatePreview);
   dom.bgColorInput.addEventListener("input", updatePreview);
   dom.bgTransparentInput.addEventListener("change", updatePreview);

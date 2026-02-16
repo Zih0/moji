@@ -1,4 +1,5 @@
 import * as path from "path";
+import type { AnimationFunction, AppState, RenderFunction } from "./animations";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const GIF = require("gif.js/dist/gif.js");
@@ -20,24 +21,11 @@ interface GifOptions {
   transparent?: number;
 }
 
-interface EncoderState {
-  bgTransparent: boolean;
-}
-
 interface EncoderConfig {
   frames: number;
   quality: number;
   delay: number;
 }
-
-type AnimationFunction = (
-  context: CanvasRenderingContext2D,
-  normalizedTime: number,
-  renderFunction: RenderFunction,
-  state: EncoderState
-) => void;
-
-type RenderFunction = () => void;
 
 const workerPath = path.join(
   __dirname,
@@ -61,7 +49,7 @@ const CONFIGS: EncoderConfig[] = [
   { frames: 8, quality: 30, delay: 125 },
 ];
 
-function createGifOptions(quality: number, state: EncoderState): GifOptions {
+function createGifOptions(quality: number, state: AppState): GifOptions {
   const options: GifOptions = {
     workers: 2,
     quality,
@@ -81,7 +69,7 @@ function addFrames(
   canvas: HTMLCanvasElement,
   animationFunction: AnimationFunction,
   renderFunction: RenderFunction,
-  state: EncoderState,
+  state: AppState,
   frameCount: number,
   delay: number
 ): void {
@@ -100,7 +88,7 @@ function encodeGIF(
   canvas: HTMLCanvasElement,
   animationFunction: AnimationFunction,
   renderFunction: RenderFunction,
-  state: EncoderState,
+  state: AppState,
   config: EncoderConfig
 ): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -117,7 +105,7 @@ export async function encodeWithSizeLimit(
   canvas: HTMLCanvasElement,
   animationFunction: AnimationFunction,
   renderFunction: RenderFunction,
-  state: EncoderState
+  state: AppState
 ): Promise<Blob> {
   for (const config of CONFIGS) {
     const blob = await encodeGIF(canvas, animationFunction, renderFunction, state, config);
