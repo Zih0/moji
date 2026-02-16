@@ -62,7 +62,8 @@
       ]
     },
     "files": [
-      "dist/**/*",
+      "dist/main/**/*",
+      "dist/renderer/**/*",
       "index.html",
       "settings.json",
       "assets/**/*",
