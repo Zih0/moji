@@ -1,14 +1,14 @@
-const { app, ipcMain, nativeImage, Menu } = require("electron");
-const { menubar } = require("menubar");
-const { execSync } = require("child_process");
-const path = require("path");
-const fs = require("fs");
-const zlib = require("zlib");
+import { app, ipcMain, nativeImage, Menu, IpcMainInvokeEvent } from "electron";
+import { menubar, Menubar } from "menubar";
+import { execSync } from "child_process";
+import * as path from "path";
+import * as fs from "fs";
+import * as zlib from "zlib";
 
 const ROOT_DIR = path.join(__dirname, "..", "..");
 const iconPath = path.join(ROOT_DIR, "assets", "iconTemplate.png");
 
-const menubarInstance = menubar({
+const menubarInstance: Menubar = menubar({
   index: `file://${path.join(ROOT_DIR, "index.html")}`,
   icon: iconPath,
   showDockIcon: false,
@@ -24,7 +24,7 @@ const menubarInstance = menubar({
   },
 });
 
-function crc32(buffer) {
+function crc32(buffer: Buffer): number {
   const table = new Uint32Array(256);
   for (let index = 0; index < 256; index++) {
     let crc = index;
@@ -40,7 +40,7 @@ function crc32(buffer) {
   return (crc ^ 0xffffffff) >>> 0;
 }
 
-function buildChunk(type, data) {
+function buildChunk(type: string, data: Buffer): Buffer {
   const lengthBuffer = Buffer.alloc(4);
   lengthBuffer.writeUInt32BE(data.length, 0);
   const typeBytes = Buffer.from(type, "ascii");
@@ -50,12 +50,12 @@ function buildChunk(type, data) {
   return Buffer.concat([lengthBuffer, typeBytes, data, crcBuffer]);
 }
 
-function createFallbackIcon() {
+function createFallbackIcon(): Buffer {
   const width = 22;
   const height = 22;
   const pixels = Buffer.alloc(width * height * 4, 0);
 
-  const setPixel = (x, y) => {
+  const setPixel = (x: number, y: number): void => {
     if (x >= 0 && x < width && y >= 0 && y < height) {
       const index = (y * width + x) * 4;
       pixels[index] = 0;
@@ -107,16 +107,16 @@ menubarInstance.on("ready", () => {
   if (!fs.existsSync(iconPath)) {
     const pngBuffer = createFallbackIcon();
     const image = nativeImage.createFromBuffer(pngBuffer, { scaleFactor: 1.0 });
-    menubarInstance.tray.setImage(image);
+    menubarInstance.tray?.setImage(image);
   }
 
   const contextMenu = Menu.buildFromTemplate([{ label: "Exit", click: () => app.quit() }]);
-  menubarInstance.tray.on("right-click", () => {
-    menubarInstance.tray.popUpContextMenu(contextMenu);
+  menubarInstance.tray?.on("right-click", () => {
+    menubarInstance.tray?.popUpContextMenu(contextMenu);
   });
 });
 
-ipcMain.handle("get-system-fonts", async () => {
+ipcMain.handle("get-system-fonts", async (): Promise<string[]> => {
   try {
     const output = execSync(
       `osascript -l JavaScript -e 'ObjC.import("AppKit"); var mgr = $.NSFontManager.sharedFontManager; var families = mgr.availableFontFamilies; var result = []; for (var i = 0; i < families.count; i++) result.push(families.objectAtIndex(i).js); result.sort().join("\\n")'`
@@ -129,15 +129,32 @@ ipcMain.handle("get-system-fonts", async () => {
   }
 });
 
-ipcMain.handle("save-image", async (_event, { dataURL, fileName }) => {
-  try {
-    const base64Data = dataURL.replace(/^data:image\/\w+;base64,/, "");
-    const buffer = Buffer.from(base64Data, "base64");
-    const desktopPath = app.getPath("desktop");
-    const filePath = path.join(desktopPath, fileName);
-    fs.writeFileSync(filePath, buffer);
-    return { success: true, path: filePath };
-  } catch (error) {
-    return { success: false, error: error.message };
+interface SaveImageArgs {
+  dataURL: string;
+  fileName: string;
+}
+
+interface SaveImageResult {
+  success: boolean;
+  path?: string;
+  error?: string;
+}
+
+ipcMain.handle(
+  "save-image",
+  async (
+    _event: IpcMainInvokeEvent,
+    { dataURL, fileName }: SaveImageArgs
+  ): Promise<SaveImageResult> => {
+    try {
+      const base64Data = dataURL.replace(/^data:image\/\w+;base64,/, "");
+      const buffer = Buffer.from(base64Data, "base64");
+      const desktopPath = app.getPath("desktop");
+      const filePath = path.join(desktopPath, fileName);
+      fs.writeFileSync(filePath, buffer);
+      return { success: true, path: filePath };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
   }
-});
+);
