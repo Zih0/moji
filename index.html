@@ -3,7 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Quick Emoji</title>
+    <title>MOJI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+      rel="stylesheet"
+    />
     <style>
       * {
         margin: 0;
@@ -12,15 +18,56 @@
       }
 
       body {
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
-          "Helvetica Neue", sans-serif;
-        background: #f0f0f0;
-        color: #1d1d1f;
+        font-family: "Press Start 2P", monospace;
+        background: #000;
+        color: #fff;
         padding: 12px;
         width: 380px;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
+        -webkit-font-smoothing: none;
+        image-rendering: pixelated;
         user-select: none;
+      }
+
+      /* ─── Pixel Grid Background ─── */
+      .pixel-bg {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        background: #000;
+        pointer-events: none;
+      }
+
+      .pixel-bg::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: linear-gradient(
+            rgba(255, 255, 255, 0.02) 1px,
+            transparent 1px
+          ),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        background-size: 16px 16px;
+      }
+
+      /* ─── Scanlines ─── */
+      .scanlines {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        pointer-events: none;
+        background: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(255, 255, 255, 0.012) 2px,
+          rgba(255, 255, 255, 0.012) 4px
+        );
+      }
+
+      /* ─── Content Container ─── */
+      .content {
+        position: relative;
+        z-index: 1;
       }
 
       /* ─── Hero Section: Preview ─── */
@@ -29,19 +76,41 @@
         flex-direction: column;
         align-items: center;
         padding: 16px;
-        background: #fff;
-        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.92);
+        border: 4px solid #fff;
+        box-shadow: 4px 4px 0 #fff;
         margin-bottom: 12px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        position: relative;
+      }
+
+      .hero::before {
+        content: "";
+        position: absolute;
+        top: -4px;
+        left: -4px;
+        right: -4px;
+        height: 20px;
+        background: #fff;
+      }
+
+      .hero::after {
+        content: "● ● ●";
+        position: absolute;
+        top: 0;
+        left: 8px;
+        font-size: 6px;
+        letter-spacing: 3px;
+        color: #000;
+        font-family: monospace;
       }
 
       #preview-canvas {
         width: 64px;
         height: 64px;
-        border-radius: 12px;
         display: none;
-        image-rendering: auto;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        border: 4px solid #fff;
+        box-shadow: 4px 4px 0 rgba(255, 255, 255, 0.2);
+        margin-top: 16px;
       }
 
       #preview-canvas.visible {
@@ -49,10 +118,10 @@
       }
 
       #preview-canvas.transparent-bg {
-        background-image: linear-gradient(45deg, #e0e0e0 25%, transparent 25%),
-          linear-gradient(-45deg, #e0e0e0 25%, transparent 25%),
-          linear-gradient(45deg, transparent 75%, #e0e0e0 75%),
-          linear-gradient(-45deg, transparent 75%, #e0e0e0 75%);
+        background-image: linear-gradient(45deg, #333 25%, transparent 25%),
+          linear-gradient(-45deg, #333 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, #333 75%),
+          linear-gradient(-45deg, transparent 75%, #333 75%);
         background-size: 12px 12px;
         background-position: 0 0, 0 6px, 6px -6px, -6px 0;
       }
@@ -60,14 +129,14 @@
       .placeholder-box {
         width: 64px;
         height: 64px;
-        border: 2px dashed #d1d1d6;
-        border-radius: 12px;
-        background: #f9f9f9;
+        border: 4px dashed #666;
+        background: #111;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #c7c7cc;
-        font-size: 20px;
+        color: #666;
+        font-size: 12px;
+        margin-top: 16px;
       }
 
       #preview-canvas.visible ~ .placeholder-box {
@@ -77,18 +146,17 @@
       #download-btn {
         margin-top: 12px;
         height: 32px;
-        padding: 0 20px;
-        background: linear-gradient(180deg, #007aff 0%, #0066d6 100%);
-        color: #fff;
-        font-size: 13px;
+        padding: 0 16px;
+        background: #fff;
+        color: #000;
+        font-size: 8px;
+        font-family: "Press Start 2P", monospace;
         font-weight: 600;
         border: none;
-        border-radius: 8px;
         cursor: pointer;
         display: none;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2),
-          inset 0 1px 0 rgba(255, 255, 255, 0.15);
-        transition: all 0.15s ease;
+        box-shadow: 4px 4px 0 #666;
+        transition: transform 0.1s, box-shadow 0.1s;
       }
 
       #download-btn.visible {
@@ -98,12 +166,13 @@
       }
 
       #download-btn:hover:not(:disabled) {
-        background: linear-gradient(180deg, #1a85ff 0%, #0073e6 100%);
+        transform: translate(2px, 2px);
+        box-shadow: 2px 2px 0 #666;
       }
 
       #download-btn:active:not(:disabled) {
-        transform: scale(0.98);
-        background: linear-gradient(180deg, #0066d6 0%, #0055b3 100%);
+        transform: translate(4px, 4px);
+        box-shadow: none;
       }
 
       #download-btn:disabled {
@@ -114,17 +183,17 @@
       #status {
         margin-top: 8px;
         text-align: center;
-        font-size: 11px;
+        font-size: 8px;
         min-height: 16px;
-        color: #86868b;
-        font-weight: 500;
+        color: #888;
+        line-height: 1.6;
       }
 
       #status.error {
-        color: #ff3b30;
+        color: #ff6b6b;
       }
       #status.success {
-        color: #34c759;
+        color: #6bff6b;
       }
 
       /* ─── Input Section ─── */
@@ -134,27 +203,24 @@
 
       #emoji-text {
         width: 100%;
-        padding: 10px 12px;
-        font-size: 15px;
-        font-family: inherit;
-        border: none;
-        border-radius: 10px;
-        background: #fff;
-        color: #1d1d1f;
+        padding: 12px;
+        font-size: 10px;
+        font-family: "Press Start 2P", monospace;
+        border: 4px solid #fff;
+        background: #111;
+        color: #fff;
         outline: none;
         resize: none;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08),
-          inset 0 0 0 1px rgba(0, 0, 0, 0.04);
-        transition: box-shadow 0.2s ease;
+        box-shadow: 4px 4px 0 rgba(255, 255, 255, 0.2);
+        line-height: 1.8;
       }
 
       #emoji-text:focus {
-        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.25),
-          0 1px 3px rgba(0, 0, 0, 0.08);
+        background: #1a1a1a;
       }
 
       #emoji-text::placeholder {
-        color: #8e8e93;
+        color: #666;
       }
 
       /* ─── Settings Cards ─── */
@@ -166,19 +232,18 @@
       }
 
       .setting-card {
-        background: #fff;
-        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.92);
+        border: 4px solid #fff;
+        box-shadow: 4px 4px 0 rgba(255, 255, 255, 0.2);
         padding: 10px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
       }
 
       .setting-card-label {
-        font-size: 10px;
-        font-weight: 600;
-        color: #86868b;
+        font-size: 8px;
+        color: #888;
         text-transform: uppercase;
-        letter-spacing: 0.3px;
-        margin-bottom: 8px;
+        letter-spacing: 1px;
+        margin-bottom: 10px;
       }
 
       .setting-card-content {
@@ -190,27 +255,24 @@
       /* Font Select */
       #font-select {
         flex: 1;
+        width: 160px;
         height: 28px;
-        font-size: 12px;
-        font-family: inherit;
-        font-weight: 500;
-        border: none;
-        border-radius: 6px;
-        background: linear-gradient(180deg, #f8f8f8 0%, #f0f0f0 100%);
-        color: #1d1d1f;
+        font-size: 8px;
+        font-family: "Press Start 2P", monospace;
+        border: 2px solid #fff;
+        background: #111;
+        color: #fff;
         padding: 0 24px 0 8px;
         outline: none;
         cursor: pointer;
-        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
         -webkit-appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg width='8' height='6' viewBox='0 0 8 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L4 4.5L7 1.5' stroke='%23636366' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg width='8' height='6' viewBox='0 0 8 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L4 4.5L7 1.5' stroke='%23fff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: right 8px center;
       }
 
       #font-select:focus {
-        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.25),
-          inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+        background-color: #1a1a1a;
       }
 
       /* Color Picker */
@@ -221,39 +283,35 @@
       }
 
       .color-picker-label {
-        font-size: 11px;
-        font-weight: 500;
-        color: #3c3c43;
-        min-width: 24px;
+        font-size: 8px;
+        color: #fff;
+        min-width: 20px;
       }
 
       input[type="color"] {
+        appearance: none;
         -webkit-appearance: none;
         width: 28px;
         height: 28px;
-        border: none;
-        border-radius: 6px;
+        border: 2px solid #fff;
         cursor: pointer;
         padding: 0;
         background: transparent;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15),
-          inset 0 0 0 1px rgba(0, 0, 0, 0.08);
-        transition: transform 0.1s ease, box-shadow 0.15s ease;
+        box-shadow: 2px 2px 0 rgba(255, 255, 255, 0.2);
+        transition: transform 0.1s;
       }
 
       input[type="color"]::-webkit-color-swatch-wrapper {
-        padding: 3px;
+        padding: 2px;
       }
 
       input[type="color"]::-webkit-color-swatch {
         border: none;
-        border-radius: 4px;
       }
 
       input[type="color"]:hover {
-        transform: scale(1.05);
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2),
-          inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+        transform: translate(-1px, -1px);
+        box-shadow: 3px 3px 0 rgba(255, 255, 255, 0.2);
       }
 
       /* Toggle Switch */
@@ -261,20 +319,19 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-top: 8px;
-        padding-top: 8px;
-        border-top: 1px solid rgba(0, 0, 0, 0.06);
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 2px solid #333;
       }
 
       .toggle-row-label {
-        font-size: 12px;
-        font-weight: 500;
-        color: #1d1d1f;
+        font-size: 8px;
+        color: #fff;
       }
 
       .toggle-switch {
         position: relative;
-        width: 34px;
+        width: 40px;
         height: 20px;
       }
 
@@ -291,49 +348,44 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: #e9e9eb;
-        border-radius: 10px;
-        transition: background 0.25s ease;
-        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+        background: #333;
+        border: 2px solid #fff;
+        transition: background 0.2s;
       }
 
       .toggle-slider::before {
         content: "";
         position: absolute;
-        height: 18px;
-        width: 18px;
-        left: 1px;
-        bottom: 1px;
+        height: 12px;
+        width: 12px;
+        left: 2px;
+        bottom: 2px;
         background: #fff;
-        border-radius: 50%;
-        transition: transform 0.25s ease;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2),
-          0 0 0 0.5px rgba(0, 0, 0, 0.04);
+        transition: transform 0.2s;
       }
 
       .toggle-switch input:checked + .toggle-slider {
-        background: #34c759;
+        background: #6bff6b;
       }
 
       .toggle-switch input:checked + .toggle-slider::before {
-        transform: translateX(14px);
+        transform: translateX(20px);
       }
 
       /* ─── Animation Section ─── */
       .animation-section {
-        background: #fff;
-        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.92);
+        border: 4px solid #fff;
+        box-shadow: 4px 4px 0 rgba(255, 255, 255, 0.2);
         padding: 10px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
       }
 
       .animation-header {
-        font-size: 10px;
-        font-weight: 600;
-        color: #86868b;
+        font-size: 8px;
+        color: #888;
         text-transform: uppercase;
-        letter-spacing: 0.3px;
-        margin-bottom: 8px;
+        letter-spacing: 1px;
+        margin-bottom: 10px;
       }
 
       .anim-grid {
@@ -343,92 +395,96 @@
       }
 
       .anim-btn {
-        font-family: inherit;
-        font-size: 10px;
-        font-weight: 500;
+        font-family: "Press Start 2P", monospace;
+        font-size: 6px;
         padding: 8px 4px;
-        border: none;
-        border-radius: 6px;
-        background: #f5f5f5;
-        color: #3c3c43;
+        border: 2px solid #666;
+        background: #111;
+        color: #888;
         cursor: pointer;
         text-align: center;
-        transition: all 0.15s ease;
-        line-height: 1.2;
+        transition: all 0.1s;
+        line-height: 1.4;
       }
 
       .anim-btn:hover {
-        background: #eaeaea;
+        border-color: #fff;
+        color: #fff;
       }
 
       .anim-btn:active {
-        background: #e0e0e0;
-        transform: scale(0.96);
+        transform: translate(1px, 1px);
       }
 
       .anim-btn.selected {
-        background: linear-gradient(180deg, #007aff 0%, #0066d6 100%);
-        color: #fff;
-        box-shadow: 0 2px 4px rgba(0, 102, 214, 0.3);
+        background: #fff;
+        color: #000;
+        border-color: #fff;
+        box-shadow: 2px 2px 0 rgba(255, 255, 255, 0.3);
       }
     </style>
   </head>
   <body>
-    <!-- Input (Top Priority) -->
-    <div class="input-section">
-      <textarea
-        id="emoji-text"
-        placeholder="Enter text..."
-        autocomplete="off"
-        spellcheck="false"
-        rows="2"
-      ></textarea>
-    </div>
+    <div class="pixel-bg"></div>
+    <div class="scanlines"></div>
 
-    <!-- Preview + Download -->
-    <div class="hero">
-      <canvas id="preview-canvas" width="128" height="128"></canvas>
-      <div class="placeholder-box">Aa</div>
-      <button id="download-btn">Download PNG</button>
-      <div id="status"></div>
-    </div>
-
-    <!-- Settings -->
-    <div class="settings-row">
-      <div class="setting-card">
-        <div class="setting-card-label">Font</div>
-        <div class="setting-card-content">
-          <select id="font-select">
-            <option value="-apple-system, sans-serif">System</option>
-          </select>
-        </div>
+    <div class="content">
+      <!-- Input (Top Priority) -->
+      <div class="input-section">
+        <textarea
+          id="emoji-text"
+          placeholder="Enter text..."
+          autocomplete="off"
+          spellcheck="false"
+          rows="2"
+        ></textarea>
       </div>
-      <div class="setting-card">
-        <div class="setting-card-label">Colors</div>
-        <div class="setting-card-content">
-          <div class="color-picker-group">
-            <span class="color-picker-label">Bg</span>
-            <input type="color" id="bg-color" value="#ffffff" />
-          </div>
-          <div class="color-picker-group">
-            <span class="color-picker-label">Fg</span>
-            <input type="color" id="font-color" value="#000000" />
+
+      <!-- Preview + Download -->
+      <div class="hero">
+        <canvas id="preview-canvas" width="128" height="128"></canvas>
+        <div class="placeholder-box">Aa</div>
+        <button id="download-btn">▶ DOWNLOAD</button>
+        <div id="status"></div>
+      </div>
+
+      <!-- Settings -->
+      <div class="settings-row">
+        <div class="setting-card">
+          <div class="setting-card-label">Font</div>
+          <div class="setting-card-content">
+            <select id="font-select">
+              <option value="-apple-system, sans-serif">System</option>
+            </select>
           </div>
         </div>
-        <div class="toggle-row">
-          <span class="toggle-row-label">Transparent</span>
-          <label class="toggle-switch">
-            <input type="checkbox" id="bg-transparent" />
-            <span class="toggle-slider"></span>
-          </label>
+        <div class="setting-card">
+          <div class="setting-card-label">Colors</div>
+          <div class="setting-card-content">
+            <div class="color-picker-group">
+              <span class="color-picker-label">Bg</span>
+              <input type="color" id="bg-color" value="#ffffff" />
+            </div>
+            <div class="color-picker-group">
+              <span class="color-picker-label">Fg</span>
+              <input type="color" id="font-color" value="#000000" />
+            </div>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-row-label">Trans</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="bg-transparent" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Animation -->
-    <div class="animation-section">
-      <div class="animation-header">Animation</div>
-      <div class="anim-grid" id="anim-grid"></div>
+      <!-- Animation -->
+      <div class="animation-section">
+        <div class="animation-header">Animation</div>
+        <div class="anim-grid" id="anim-grid"></div>
+      </div>
     </div>
 
     <script src="src/renderer/renderer.js"></script>
