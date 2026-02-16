@@ -1,10 +1,11 @@
 {
   "name": "quick-emoji",
   "version": "1.0.0",
-  "main": "src/main/main.js",
+  "main": "dist/main/main.js",
   "scripts": {
-    "start": "electron .",
-    "build": "electron-builder --mac dmg",
+    "start": "npm run build:ts && electron .",
+    "build:ts": "tsc",
+    "build": "npm run build:ts && electron-builder --mac dmg",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
@@ -22,11 +23,13 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/node": "^25.2.3",
     "electron": "^34.5.8",
     "electron-builder": "^25.1.8",
     "eslint": "^10.0.0",
     "globals": "^17.3.0",
-    "prettier": "^3.8.1"
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3"
   },
   "build": {
     "appId": "com.moji.quick-emoji",
@@ -53,10 +56,11 @@
       ]
     },
     "files": [
-      "src/**/*",
+      "dist/**/*",
       "index.html",
       "settings.json",
-      "assets/**/*"
+      "assets/**/*",
+      "node_modules/gif.js/**/*"
     ]
   }
 }
