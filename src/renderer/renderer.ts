@@ -1,5 +1,6 @@
 import { animations, animationList, AnimationFunction, AppState } from "./animations";
 import { encodeWithSizeLimit, blobToDataURL, MAX_SIZE, TRANSPARENT_KEY } from "./gif-encoder";
+import { splitText, measureLinesFit } from "./text-utils";
 
 // ── DOM References ──
 
@@ -110,30 +111,13 @@ const selectAnimation = (animationId: string | null, buttonElement: HTMLButtonEl
 
 // ── Text Utilities ──
 
-const splitText = (text: string): string[] => text.split("\n").filter((line) => line.length > 0);
-
-const measureLinesFit = (
-  context: CanvasRenderingContext2D,
-  lines: string[],
-  maxWidth: number,
-  maxHeight: number,
-  fontSize: number
-): boolean => {
-  context.font = `bold ${fontSize}px ${state.fontFamily}`;
-  const lineHeight = fontSize * 1.15;
-  if (lines.length * lineHeight > maxHeight) {
-    return false;
-  }
-  return lines.every((line) => context.measureText(line).width <= maxWidth);
-};
-
 const calcFontSize = (context: CanvasRenderingContext2D, lines: string[]): number => {
   const padding = 8;
   const maxWidth = 128 - padding * 2;
   const maxHeight = 128 - padding * 2;
 
   for (let fontSize = 64; fontSize > 8; fontSize--) {
-    if (measureLinesFit(context, lines, maxWidth, maxHeight, fontSize)) {
+    if (measureLinesFit(context, lines, maxWidth, maxHeight, fontSize, state.fontFamily)) {
       return fontSize;
     }
   }
