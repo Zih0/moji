@@ -1,13 +1,51 @@
 // GSAP-based animation effects for Quick Emoji
 // Uses GSAP timelines for precise control and GIF frame extraction
 
-const { gsap } = require("gsap");
+import { gsap } from "gsap";
 
 const SIZE = 128;
 const HALF = SIZE / 2;
 
+export interface AnimationState {
+  offsetX: number;
+  offsetY: number;
+  scale: number;
+  scaleX: number;
+  scaleY: number;
+  rotation: number;
+  alpha: number;
+  skewX: number;
+  shadowBlur: number;
+  hue: number;
+  _partyColor: string | null;
+  _waveT: number | null;
+}
+
+export interface AppState {
+  _partyColor: string | null;
+  _waveT: number | null;
+  bgTransparent: boolean;
+}
+
+export interface AnimationMetadata {
+  id: string;
+  name: string;
+  category: string;
+}
+
+export type RenderFunction = () => void;
+
+export type AnimationFunction = (
+  context: CanvasRenderingContext2D,
+  normalizedTime: number,
+  renderFunction: RenderFunction,
+  appState: AppState
+) => void;
+
+type TimelineCreator = (state: AnimationState) => gsap.core.Timeline;
+
 // Animation state factory
-const createAnimationState = () => ({
+export const createAnimationState = (): AnimationState => ({
   offsetX: 0,
   offsetY: 0,
   scale: 1,
@@ -23,7 +61,12 @@ const createAnimationState = () => ({
 });
 
 // Canvas rendering based on animation state
-const renderWithState = (context, animationState, renderFunction, appState) => {
+const renderWithState = (
+  context: CanvasRenderingContext2D,
+  animationState: AnimationState,
+  renderFunction: RenderFunction,
+  appState: AppState
+): void => {
   context.save();
 
   // Apply alpha
@@ -71,7 +114,7 @@ const renderWithState = (context, animationState, renderFunction, appState) => {
 };
 
 // Timeline creators for each animation
-const timelineCreators = {
+export const timelineCreators: Record<string, TimelineCreator> = {
   shake: (state) => {
     return gsap
       .timeline({ paused: true })
@@ -330,7 +373,7 @@ const timelineCreators = {
 };
 
 // Create animation function that uses GSAP timeline
-const createAnimation = (animationId) => {
+const createAnimation = (animationId: string): AnimationFunction | null => {
   const createTimeline = timelineCreators[animationId];
   if (!createTimeline) {
     return null;
@@ -354,13 +397,16 @@ const createAnimation = (animationId) => {
 };
 
 // Build animations object
-const animations = {};
+export const animations: Record<string, AnimationFunction> = {};
 Object.keys(timelineCreators).forEach((animationId) => {
-  animations[animationId] = createAnimation(animationId);
+  const animation = createAnimation(animationId);
+  if (animation) {
+    animations[animationId] = animation;
+  }
 });
 
 // Metadata for UI display
-const animationList = [
+export const animationList: AnimationMetadata[] = [
   { id: "shake", name: "Shake", category: "move" },
   { id: "bounce", name: "Bounce", category: "move" },
   { id: "slide", name: "Slide", category: "move" },
@@ -386,10 +432,3 @@ const animationList = [
   { id: "tada", name: "Tada", category: "special" },
   { id: "wave", name: "Wave", category: "special" },
 ];
-
-module.exports = {
-  animations,
-  animationList,
-  createAnimationState,
-  timelineCreators,
-};
