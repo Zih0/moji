@@ -81,12 +81,7 @@ function createFallbackIcon() {
   const raw = Buffer.alloc(height * (1 + width * 4));
   for (let y = 0; y < height; y++) {
     raw[y * (1 + width * 4)] = 0;
-    pixels.copy(
-      raw,
-      y * (1 + width * 4) + 1,
-      y * width * 4,
-      (y + 1) * width * 4
-    );
+    pixels.copy(raw, y * (1 + width * 4) + 1, y * width * 4, (y + 1) * width * 4);
   }
 
   const compressed = zlib.deflateSync(raw);
@@ -115,9 +110,7 @@ menubarInstance.on("ready", () => {
     menubarInstance.tray.setImage(image);
   }
 
-  const contextMenu = Menu.buildFromTemplate([
-    { label: "Exit", click: () => app.quit() },
-  ]);
+  const contextMenu = Menu.buildFromTemplate([{ label: "Exit", click: () => app.quit() }]);
   menubarInstance.tray.on("right-click", () => {
     menubarInstance.tray.popUpContextMenu(contextMenu);
   });

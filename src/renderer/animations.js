@@ -48,10 +48,7 @@ const renderWithState = (context, animationState, renderFunction, appState) => {
   }
 
   // Apply transforms
-  context.translate(
-    HALF + animationState.offsetX,
-    HALF + animationState.offsetY
-  );
+  context.translate(HALF + animationState.offsetX, HALF + animationState.offsetY);
   context.rotate(animationState.rotation);
   context.scale(
     animationState.scaleX * animationState.scale,
@@ -97,11 +94,7 @@ const timelineCreators = {
   slide: (state) => {
     return gsap
       .timeline({ paused: true })
-      .fromTo(
-        state,
-        { offsetX: -SIZE },
-        { offsetX: 0, duration: 0.5, ease: "power2.out" }
-      )
+      .fromTo(state, { offsetX: -SIZE }, { offsetX: 0, duration: 0.5, ease: "power2.out" })
       .to(state, { offsetX: SIZE, duration: 0.5, ease: "power2.in" });
   },
 
@@ -244,9 +237,7 @@ const timelineCreators = {
   },
 
   party: (state) => {
-    return gsap
-      .timeline({ paused: true })
-      .to(state, { hue: 360, duration: 1, ease: "none" });
+    return gsap.timeline({ paused: true }).to(state, { hue: 360, duration: 1, ease: "none" });
   },
 
   flash: (state) => {
@@ -334,9 +325,7 @@ const timelineCreators = {
   },
 
   wave: (state) => {
-    return gsap
-      .timeline({ paused: true })
-      .to(state, { _waveT: 1, duration: 1, ease: "none" });
+    return gsap.timeline({ paused: true }).to(state, { _waveT: 1, duration: 1, ease: "none" });
   },
 };
 

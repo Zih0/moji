@@ -1,12 +1,11 @@
 const path = require("path");
 const { ipcRenderer } = require("electron");
-const { animations, animationList } = require(path.join(__dirname, "src", "renderer", "animations"));
-const {
-  encodeWithSizeLimit,
-  blobToDataURL,
-  MAX_SIZE,
-  TRANSPARENT_KEY,
-} = require(path.join(__dirname, "src", "renderer", "gif-encoder"));
+const { animations, animationList } = require(
+  path.join(__dirname, "src", "renderer", "animations")
+);
+const { encodeWithSizeLimit, blobToDataURL, MAX_SIZE, TRANSPARENT_KEY } = require(
+  path.join(__dirname, "src", "renderer", "gif-encoder")
+);
 
 // ── DOM References ──
 
@@ -104,8 +103,7 @@ const calcFontSize = (context, lines) => {
 
 // ── Background Rendering ──
 
-const getChromaKeyColor = () =>
-  "#" + TRANSPARENT_KEY.toString(16).padStart(6, "0");
+const getChromaKeyColor = () => "#" + TRANSPARENT_KEY.toString(16).padStart(6, "0");
 
 const renderBackground = (context) => {
   context.save();
@@ -114,9 +112,7 @@ const renderBackground = (context) => {
   if (state.bgTransparent) {
     const chromaKey = getChromaKeyColor();
     context.fillStyle = state._useChromaKey ? chromaKey : "transparent";
-    state._useChromaKey
-      ? context.fillRect(0, 0, 128, 128)
-      : context.clearRect(0, 0, 128, 128);
+    state._useChromaKey ? context.fillRect(0, 0, 128, 128) : context.clearRect(0, 0, 128, 128);
   } else {
     context.fillStyle = state.bgColor;
     context.fillRect(0, 0, 128, 128);
@@ -315,12 +311,7 @@ const downloadGIF = async () => {
   state._useChromaKey = true;
 
   try {
-    const blob = await encodeWithSizeLimit(
-      offCanvas,
-      animationFunction,
-      renderTextContent,
-      state
-    );
+    const blob = await encodeWithSizeLimit(offCanvas, animationFunction, renderTextContent, state);
     const dataURL = await blobToDataURL(blob);
     const fileName = `emoji_${Date.now()}.gif`;
 
@@ -378,9 +369,7 @@ const saveFile = async (dataURL, fileName) => {
       dataURL,
       fileName,
     });
-    result.success
-      ? showSaveSuccess()
-      : showSaveError(result?.error ?? "Save failed");
+    result.success ? showSaveSuccess() : showSaveError(result?.error ?? "Save failed");
   } catch (error) {
     showSaveError(error?.message);
   }
@@ -397,19 +386,13 @@ const createFontOption = (family) => {
 
 const loadSystemFonts = async () => {
   const fonts = await ipcRenderer.invoke("get-system-fonts");
-  fonts.forEach((family) =>
-    dom.fontSelect.appendChild(createFontOption(family))
-  );
+  fonts.forEach((family) => dom.fontSelect.appendChild(createFontOption(family)));
 };
 
 // ── Event Handlers ──
 
 const handleMetaEnterDownload = (event) => {
-  if (
-    event.key === "Enter" &&
-    event.metaKey &&
-    dom.canvas.classList.contains("visible")
-  ) {
+  if (event.key === "Enter" && event.metaKey && dom.canvas.classList.contains("visible")) {
     download();
   }
 };

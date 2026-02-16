@@ -4,7 +4,9 @@
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --mac dmg"
+    "build": "electron-builder --mac dmg",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "keywords": [],
   "author": "",
@@ -17,7 +19,8 @@
   },
   "devDependencies": {
     "electron": "^34.5.8",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^25.1.8",
+    "prettier": "^3.8.1"
   },
   "build": {
     "appId": "com.moji.quick-emoji",

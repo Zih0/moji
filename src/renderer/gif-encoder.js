@@ -1,18 +1,26 @@
-const GIF = require('gif.js/dist/gif.js');
-const path = require('path');
+const GIF = require("gif.js/dist/gif.js");
+const path = require("path");
 
-const workerPath = path.join(__dirname, '..', '..', 'node_modules', 'gif.js', 'dist', 'gif.worker.js');
+const workerPath = path.join(
+  __dirname,
+  "..",
+  "..",
+  "node_modules",
+  "gif.js",
+  "dist",
+  "gif.worker.js"
+);
 const WORKER_SCRIPT = `file://${workerPath}`;
 const MAX_SIZE = 128 * 1024; // 128KB Slack limit
 // Chroma key color for GIF transparency. GIF has no alpha channel, so we fill
 // "transparent" areas with this color and tell the encoder to treat it as transparent.
 // Using bright green (classic green-screen) to avoid colliding with typical text colors.
-const TRANSPARENT_KEY = 0x00FF00;
+const TRANSPARENT_KEY = 0x00ff00;
 
 const CONFIGS = [
   { frames: 15, quality: 10, delay: 66 },
   { frames: 10, quality: 20, delay: 100 },
-  { frames: 8,  quality: 30, delay: 125 },
+  { frames: 8, quality: 30, delay: 125 },
 ];
 
 function createGifOptions(quality, state) {
@@ -31,7 +39,7 @@ function createGifOptions(quality, state) {
 }
 
 function addFrames(gif, canvas, animationFunction, renderFunction, state, frameCount, delay) {
-  const context = canvas.getContext('2d');
+  const context = canvas.getContext("2d");
   Array.from({ length: frameCount }, (_, index) => index / frameCount).forEach((normalizedTime) => {
     context.clearRect(0, 0, 128, 128);
     animationFunction(context, normalizedTime, renderFunction, state);
@@ -44,8 +52,8 @@ function encodeGIF(canvas, animationFunction, renderFunction, state, config) {
     const { frames, quality, delay } = config;
     const gif = new GIF(createGifOptions(quality, state));
     addFrames(gif, canvas, animationFunction, renderFunction, state, frames, delay);
-    gif.on('finished', resolve);
-    gif.on('error', reject);
+    gif.on("finished", resolve);
+    gif.on("error", reject);
     gif.render();
   });
 }

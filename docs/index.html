@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
@@ -41,10 +41,8 @@
         content: "";
         position: absolute;
         inset: 0;
-        background-image: linear-gradient(
-            rgba(255, 255, 255, 0.02) 1px,
-            transparent 1px
-          ),
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
           linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
         background-size: 16px 16px;
       }
@@ -172,7 +170,9 @@
         border: none;
         text-decoration: none;
         cursor: pointer;
-        transition: transform 0.1s, box-shadow 0.1s;
+        transition:
+          transform 0.1s,
+          box-shadow 0.1s;
         box-shadow: 4px 4px 0 #666;
         position: relative;
         line-height: 1.8;
@@ -234,10 +234,7 @@
         Generate <br />
         Slack Emoji
       </p>
-      <a
-        href="https://github.com/Zih0/moji/releases/latest/download/MOJI.dmg"
-        class="download-btn"
-      >
+      <a href="https://github.com/Zih0/moji/releases/latest/download/MOJI.dmg" class="download-btn">
         ▶ DOWNLOAD
       </a>
     </div>
@@ -248,55 +245,54 @@
         // '#' = filled pixel, '.' = empty
         const ART = [
           // Heart
-          '..##.##..\n.#######.\n#########\n#########\n.#######.\n..#####..\n...###...\n....#....',
+          "..##.##..\n.#######.\n#########\n#########\n.#######.\n..#####..\n...###...\n....#....",
           // Sparkle
-          '...#...\n...#...\n..###..\n#######\n..###..\n...#...\n...#...',
+          "...#...\n...#...\n..###..\n#######\n..###..\n...#...\n...#...",
           // Smiley
-          '..####..\n.#....#.\n#.#..#.#\n#......#\n#......#\n#..##..#\n.#....#.\n..####..',
+          "..####..\n.#....#.\n#.#..#.#\n#......#\n#......#\n#..##..#\n.#....#.\n..####..",
           // Ghost
-          '..####..\n.######.\n##.##.##\n########\n########\n########\n#.##.##.\n.#..#..#',
+          "..####..\n.######.\n##.##.##\n########\n########\n########\n#.##.##.\n.#..#..#",
           // Dice
-          '########\n#......#\n#.#..#.#\n#......#\n#..##..#\n#......#\n#.#..#.#\n#......#\n########',
+          "########\n#......#\n#.#..#.#\n#......#\n#..##..#\n#......#\n#.#..#.#\n#......#\n########",
           // Crown
-          '.#.#.#.\n##.#.##\n#######\n#######\n.#####.',
+          ".#.#.#.\n##.#.##\n#######\n#######\n.#####.",
           // Music Note
-          '...####\n...#..#\n...#..#\n...#...\n...#...\n####...\n#.#....\n.##....',
+          "...####\n...#..#\n...#..#\n...#...\n...#...\n####...\n#.#....\n.##....",
           // Lightning
-          '....##\n...##.\n..##..\n.####.\n..##..\n.##...\n##....',
+          "....##\n...##.\n..##..\n.####.\n..##..\n.##...\n##....",
           // Diamond
-          '....#....\n...###...\n..#...#..\n.#.....#.\n#.......#\n.#.....#.\n..#...#..\n...###...\n....#....',
+          "....#....\n...###...\n..#...#..\n.#.....#.\n#.......#\n.#.....#.\n..#...#..\n...###...\n....#....",
           // Moon
-          '..###..\n.##..#.\n##.....\n#......\n#......\n##.....\n.##..#.\n..###..',
+          "..###..\n.##..#.\n##.....\n#......\n#......\n##.....\n.##..#.\n..###..",
           // Skull
-          '.#####.\n#.....#\n#.#.#.#\n#.#.#.#\n#.....#\n.#####.\n..#.#..\n..#.#..',
+          ".#####.\n#.....#\n#.#.#.#\n#.#.#.#\n#.....#\n.#####.\n..#.#..\n..#.#..",
           // Space Invader
-          '..#...#..\n...#.#...\n..#####..\n.##.#.##.\n#########\n#.#####.#\n#.#...#.#\n...#.#...',
+          "..#...#..\n...#.#...\n..#####..\n.##.#.##.\n#########\n#.#####.#\n#.#...#.#\n...#.#...",
           // Cat
-          '#.....#\n##...##\n#.#.#.#\n#..#..#\n#.....#\n#.###.#\n.#...#.\n..###..',
+          "#.....#\n##...##\n#.#.#.#\n#..#..#\n#.....#\n#.###.#\n.#...#.\n..###..",
           // Planet
-          '..####..\n.#....#.\n#..##..#\n#.#..#.#\n#..##..#\n.#....#.\n..####..',
+          "..####..\n.#....#.\n#..##..#\n#.#..#.#\n#..##..#\n.#....#.\n..####..",
           // Puzzle
-          '..##....\n..##....\n.######.\n##...###\n##...#..\n.######.\n..##....\n..##....',
+          "..##....\n..##....\n.######.\n##...###\n##...#..\n.######.\n..##....\n..##....",
           // Cherry
-          '....##..\n...#.#..\n..#..#..\n.##.##..\n#..#..#.\n#..#..#.\n.##..##.',
+          "....##..\n...#.#..\n..#..#..\n.##.##..\n#..#..#.\n#..#..#.\n.##..##.",
         ];
 
-        const container = document.getElementById('floatingEmojis');
+        const container = document.getElementById("floatingEmojis");
 
         // Render pixel art string to a canvas
         function render(artStr, scale) {
-          const rows = artStr.split('\n');
+          const rows = artStr.split("\n");
           const h = rows.length;
           const w = Math.max(...rows.map((r) => r.length));
-          const c = document.createElement('canvas');
+          const c = document.createElement("canvas");
           c.width = w * scale;
           c.height = h * scale;
-          const ctx = c.getContext('2d');
-          ctx.fillStyle = '#fff';
+          const ctx = c.getContext("2d");
+          ctx.fillStyle = "#fff";
           rows.forEach((row, y) => {
             [...row].forEach((ch, x) => {
-              if (ch === '#')
-                ctx.fillRect(x * scale, y * scale, scale, scale);
+              if (ch === "#") ctx.fillRect(x * scale, y * scale, scale, scale);
             });
           });
           return c;
@@ -311,24 +307,24 @@
           const si = Math.floor(Math.random() * scales.length);
           const src = cache[idx][si];
 
-          const el = document.createElement('div');
-          el.className = 'pixel-emoji';
+          const el = document.createElement("div");
+          el.className = "pixel-emoji";
 
-          const canvas = document.createElement('canvas');
+          const canvas = document.createElement("canvas");
           canvas.width = src.width;
           canvas.height = src.height;
-          canvas.getContext('2d').drawImage(src, 0, 0);
+          canvas.getContext("2d").drawImage(src, 0, 0);
           el.appendChild(canvas);
 
-          el.style.left = 5 + Math.random() * 90 + '%';
-          el.style.animationDuration = 10 + Math.random() * 15 + 's';
+          el.style.left = 5 + Math.random() * 90 + "%";
+          el.style.animationDuration = 10 + Math.random() * 15 + "s";
 
           // Random wobble speed for horizontal sway
-          canvas.style.animationDuration = 2 + Math.random() * 3 + 's';
-          canvas.style.animationDelay = Math.random() * 2 + 's';
+          canvas.style.animationDuration = 2 + Math.random() * 3 + "s";
+          canvas.style.animationDelay = Math.random() * 2 + "s";
 
           container.appendChild(el);
-          el.addEventListener('animationend', () => el.remove());
+          el.addEventListener("animationend", () => el.remove());
         }
 
         // Continuous spawning
@@ -342,22 +338,22 @@
             if (last) {
               const dur = parseFloat(last.style.animationDuration);
               const progress = Math.random() * 0.7;
-              last.style.animationDelay = -progress * dur + 's';
+              last.style.animationDelay = -progress * dur + "s";
             }
           }, i * 150);
         }
 
         // ─── Twinkling Stars ───
         for (let i = 0; i < 50; i++) {
-          const star = document.createElement('div');
-          star.className = 'star';
-          star.style.left = Math.random() * 100 + '%';
-          star.style.top = Math.random() * 100 + '%';
-          star.style.animationDuration = 1.5 + Math.random() * 3 + 's';
-          star.style.animationDelay = Math.random() * 3 + 's';
+          const star = document.createElement("div");
+          star.className = "star";
+          star.style.left = Math.random() * 100 + "%";
+          star.style.top = Math.random() * 100 + "%";
+          star.style.animationDuration = 1.5 + Math.random() * 3 + "s";
+          star.style.animationDelay = Math.random() * 3 + "s";
           if (Math.random() > 0.6) {
-            star.style.width = '2px';
-            star.style.height = '2px';
+            star.style.width = "2px";
+            star.style.height = "2px";
           }
           document.body.appendChild(star);
         }
